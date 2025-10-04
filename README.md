@@ -4,7 +4,7 @@ A real-time AI-powered lecture assistant that captures teacher voice, transcribe
 
 ## 🚀 Features
 
-- **Real-time Voice Transcription**: Capture teacher's voice and transcribe using Google Cloud STT
+- **Real-time Voice Transcription**: Capture teacher's voice and transcribe using Deepgram STT
 - **AI-Powered Note Generation**: Generate clean bullet-point notes using Gemini API
 - **Live Blackboard**: Real-time HTML + Tailwind frontend for students
 - **Voice Commands**: Support for teacher voice commands (e.g., "AI open a new slide")
@@ -17,7 +17,7 @@ A real-time AI-powered lecture assistant that captures teacher voice, transcribe
 - **Frontend**: React.js + Tailwind CSS
 - **Backend**: Node.js + Express + Socket.IO
 - **Database**: MongoDB
-- **AI Services**: Google Cloud STT + Gemini API
+- **AI Services**: Deepgram STT + Gemini API
 - **PDF Generation**: Puppeteer
 - **Authentication**: JWT
 
@@ -27,7 +27,7 @@ Before setting up the project, make sure you have:
 
 1. **Node.js** (v16 or higher)
 2. **MongoDB** (local installation or MongoDB Atlas account)
-3. **Google Cloud Account** (for Speech-to-Text API)
+3. **Deepgram Account** (for Speech-to-Text API)
 4. **Google Gemini API Key**
 
 ## ⚡ Quick Setup
@@ -48,8 +48,7 @@ chmod +x setup.sh
      ```env
      MONGODB_URI=mongodb://localhost:27017/lectra
      GEMINI_API_KEY=your-gemini-api-key-here
-     GOOGLE_PROJECT_ID=your-google-cloud-project-id
-     GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+     DEEPGRAM_API_KEY=your-deepgram-api-key-here
      JWT_SECRET=your-super-secret-jwt-key
      ```
 
@@ -61,13 +60,13 @@ npm run dev
 
 ## 🔧 Detailed Setup
 
-### 1. Google Cloud Speech-to-Text Setup
+### 1. Deepgram Speech-to-Text Setup
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Speech-to-Text API
-4. Create a service account and download the JSON key
-5. Set the path to the key file in `GOOGLE_APPLICATION_CREDENTIALS`
+1. Go to [Deepgram Console](https://console.deepgram.com/)
+2. Sign up for a free account
+3. Navigate to the API Keys section
+4. Create a new API key
+5. Copy the API key and add it to your `.env` file as `DEEPGRAM_API_KEY`
 
 ### 2. Gemini API Setup
 
@@ -237,9 +236,8 @@ MONGODB_URI=mongodb://localhost:27017/lectra
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
 
-# Google Cloud
-GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-GOOGLE_PROJECT_ID=your-project-id
+# Deepgram
+DEEPGRAM_API_KEY=your-deepgram-api-key
 
 # Gemini AI
 GEMINI_API_KEY=your-gemini-api-key
@@ -280,7 +278,7 @@ FRONTEND_URL=http://localhost:3000
 
 1. **Audio not recording**: Check microphone permissions in browser
 2. **Socket connection failed**: Verify CORS settings and network
-3. **Speech-to-Text not working**: Check Google Cloud credentials
+3. **Speech-to-Text not working**: Check Deepgram API key
 4. **PDF generation failed**: Ensure Puppeteer dependencies are installed
 
 ### Debug Mode
@@ -309,7 +307,7 @@ If you encounter any issues:
 1. Check the troubleshooting section
 2. Review the logs for error messages
 3. Ensure all environment variables are set correctly
-4. Verify all external services (MongoDB, Google Cloud, Gemini) are accessible
+4. Verify all external services (MongoDB, Deepgram, Gemini) are accessible
 
 ## 🎉 Features Roadmap
 

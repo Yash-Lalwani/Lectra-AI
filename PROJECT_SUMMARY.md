@@ -2,14 +2,14 @@
 
 ## 🎯 Project Overview
 
-Lectra is a comprehensive real-time AI-powered lecture assistant that transforms traditional teaching by providing intelligent note-taking, interactive polling, and seamless student engagement. The application captures teacher voice during presentations, transcribes it using Google Cloud Speech-to-Text, and generates clean bullet-point notes using Google's Gemini AI.
+Lectra is a comprehensive real-time AI-powered lecture assistant that transforms traditional teaching by providing intelligent note-taking, interactive polling, and seamless student engagement. The application captures teacher voice during presentations, transcribes it using Deepgram Speech-to-Text, and generates clean bullet-point notes using Google's Gemini AI.
 
 ## ✨ Key Features Implemented
 
 ### 🎤 Real-time Voice Processing
 
 - **Audio Capture**: Browser-based microphone recording with MediaRecorder API
-- **Speech-to-Text**: Google Cloud Speech-to-Text integration for accurate transcription
+- **Speech-to-Text**: Deepgram Speech-to-Text integration for accurate transcription
 - **AI Note Generation**: Gemini API integration for intelligent note summarization
 - **Voice Commands**: Natural language commands for slide management and interactive features
 
@@ -94,7 +94,7 @@ Lectra is a comprehensive real-time AI-powered lecture assistant that transforms
 - **MongoDB**: Database with Mongoose ODM
 - **JWT**: Authentication tokens
 - **Puppeteer**: PDF generation
-- **Google Cloud STT**: Speech-to-text service
+- **Deepgram STT**: Speech-to-text service
 - **Google Gemini AI**: Natural language processing
 
 ### Frontend Stack
