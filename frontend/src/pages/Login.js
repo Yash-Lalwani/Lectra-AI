@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { BookOpen, User, Lock, Mail, Eye, EyeOff } from "lucide-react";
 
@@ -17,6 +17,7 @@ const Login = () => {
 
   const { login, register, isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const from = location.state?.from?.pathname || "/dashboard";
 
@@ -46,7 +47,12 @@ const Login = () => {
       }
 
       if (result.success) {
-        window.location.href = from;
+        // Check if student and doesn't have professor name
+        if (result.user?.role === 'student' && !result.user?.professorName) {
+          navigate("/professor-select");
+        } else {
+          navigate(from);
+        }
       }
     } catch (error) {
       console.error("Auth error:", error);

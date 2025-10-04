@@ -42,12 +42,30 @@ router.get("/", async (req, res) => {
         .populate("teacher", "firstName lastName email")
         .sort({ createdAt: -1 });
     } else {
-      // Students see all active or completed lectures
-      lectures = await Lecture.find({
+      // Students see lectures from their selected professor only
+      if (!req.user.professorName) {
+        // If student hasn't set professor name yet, return empty array
+        return res.json({ lectures: [] });
+      }
+
+      // Find all lectures where the teacher's name matches the student's professor name
+      const allLectures = await Lecture.find({
         status: { $in: ["active", "completed"] },
       })
         .populate("teacher", "firstName lastName email")
         .sort({ createdAt: -1 });
+
+      // Filter by professor name (case-insensitive match)
+      const professorNameLower = req.user.professorName.toLowerCase();
+      lectures = allLectures.filter(lecture => {
+        const teacherFullName = `${lecture.teacher.firstName} ${lecture.teacher.lastName}`.toLowerCase();
+        const teacherFirstName = lecture.teacher.firstName.toLowerCase();
+        const teacherLastName = lecture.teacher.lastName.toLowerCase();
+
+        return teacherFullName.includes(professorNameLower) ||
+               teacherFirstName.includes(professorNameLower) ||
+               teacherLastName.includes(professorNameLower);
+      });
     }
 
     res.json({ lectures });

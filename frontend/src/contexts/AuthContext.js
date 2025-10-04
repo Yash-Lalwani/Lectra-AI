@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       toast.success(`Welcome back, ${user.firstName}!`);
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
       dispatch({
@@ -143,7 +143,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       toast.success(`Welcome to Lectra, ${user.firstName}!`);
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       const message = error.response?.data?.message || "Registration failed";
       dispatch({

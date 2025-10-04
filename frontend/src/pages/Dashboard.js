@@ -166,6 +166,15 @@ const Dashboard = () => {
                   {user.role}
                 </span>
               </div>
+              {user.role === "student" && user.professorName && (
+                <Link
+                  to="/professor-select"
+                  className="flex items-center space-x-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Change Professor ({user.professorName})</span>
+                </Link>
+              )}
               <button
                 onClick={logout}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"

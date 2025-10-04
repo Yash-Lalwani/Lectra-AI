@@ -10,6 +10,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
+import ProfessorSelect from "./pages/ProfessorSelect";
 import Dashboard from "./pages/Dashboard";
 import Lecture from "./pages/Lecture";
 import Blackboard from "./pages/Blackboard";
@@ -23,6 +24,14 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/professor-select"
+                element={
+                  <ProtectedRoute>
+                    <ProfessorSelect />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/"
                 element={

@@ -57,6 +57,7 @@ router.post("/register", async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        professorName: user.professorName,
       },
     });
   } catch (error) {
@@ -109,6 +110,7 @@ router.post("/login", async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        professorName: user.professorName,
       },
     });
   } catch (error) {
@@ -146,8 +148,43 @@ router.get("/verify", authenticateToken, (req, res) => {
       firstName: req.user.firstName,
       lastName: req.user.lastName,
       role: req.user.role,
+      professorName: req.user.professorName,
     },
   });
+});
+
+// Update professor name for student
+router.patch("/update-professor", authenticateToken, async (req, res) => {
+  try {
+    const { professorName } = req.body;
+
+    if (!professorName || !professorName.trim()) {
+      return res.status(400).json({ message: "Professor name is required" });
+    }
+
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can set a professor name" });
+    }
+
+    req.user.professorName = professorName.trim();
+    await req.user.save();
+
+    res.json({
+      success: true,
+      message: "Professor name updated successfully",
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        role: req.user.role,
+        professorName: req.user.professorName,
+      },
+    });
+  } catch (error) {
+    console.error("Update professor error:", error);
+    res.status(500).json({ message: "Server error updating professor name" });
+  }
 });
 
 module.exports = router;
