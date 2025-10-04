@@ -1,50 +1,46 @@
-const speech = require("@google-cloud/speech");
+const { createClient } = require("@deepgram/sdk");
 
 class SpeechService {
   constructor() {
-    this.client = new speech.SpeechClient();
-    this.config = {
-      encoding: "WEBM_OPUS",
-      sampleRateHertz: 48000,
-      languageCode: "en-US",
-      enableAutomaticPunctuation: true,
-      model: "latest_long",
-    };
+    this.deepgram = createClient(process.env.DEEPGRAM_API_KEY);
   }
 
   async transcribeAudio(audioBuffer) {
     try {
-      const audio = {
-        content: audioBuffer.toString("base64"),
-      };
+      const response = await this.deepgram.listen.prerecorded.transcribeFile(
+        audioBuffer,
+        {
+          model: "nova-2",
+          language: "en-US",
+          punctuate: true,
+          paragraphs: true,
+          smart_format: true,
+        }
+      );
 
-      const request = {
-        audio: audio,
-        config: this.config,
-      };
+      if (
+        response.results &&
+        response.results.channels &&
+        response.results.channels.length > 0
+      ) {
+        const channel = response.results.channels[0];
+        if (channel.alternatives && channel.alternatives.length > 0) {
+          const alternative = channel.alternatives[0];
 
-      const [response] = await this.client.recognize(request);
-
-      if (response.results && response.results.length > 0) {
-        const transcription = response.results
-          .map((result) => result.alternatives[0].transcript)
-          .join("\n");
-
-        const confidence = response.results[0].alternatives[0].confidence;
-
-        return {
-          text: transcription,
-          confidence: confidence,
-          success: true,
-        };
-      } else {
-        return {
-          text: "",
-          confidence: 0,
-          success: false,
-          error: "No speech detected",
-        };
+          return {
+            text: alternative.transcript,
+            confidence: alternative.confidence,
+            success: true,
+          };
+        }
       }
+
+      return {
+        text: "",
+        confidence: 0,
+        success: false,
+        error: "No speech detected",
+      };
     } catch (error) {
       console.error("Speech transcription error:", error);
       return {
@@ -58,31 +54,34 @@ class SpeechService {
 
   async streamTranscribe(audioChunk) {
     try {
-      const audio = {
-        content: audioChunk.toString("base64"),
-      };
+      const response = await this.deepgram.listen.prerecorded.transcribeFile(
+        audioChunk,
+        {
+          model: "nova-2",
+          language: "en-US",
+          punctuate: true,
+          paragraphs: true,
+          smart_format: true,
+          interim_results: true,
+        }
+      );
 
-      const request = {
-        audio: audio,
-        config: {
-          ...this.config,
-          enableInterimResults: true,
-          interimResults: true,
-        },
-      };
+      if (
+        response.results &&
+        response.results.channels &&
+        response.results.channels.length > 0
+      ) {
+        const channel = response.results.channels[0];
+        if (channel.alternatives && channel.alternatives.length > 0) {
+          const alternative = channel.alternatives[0];
 
-      const [response] = await this.client.recognize(request);
-
-      if (response.results && response.results.length > 0) {
-        const result = response.results[0];
-        const alternative = result.alternatives[0];
-
-        return {
-          text: alternative.transcript,
-          confidence: alternative.confidence,
-          isFinal: result.isFinal,
-          success: true,
-        };
+          return {
+            text: alternative.transcript,
+            confidence: alternative.confidence,
+            isFinal: response.results.is_final,
+            success: true,
+          };
+        }
       }
 
       return {
