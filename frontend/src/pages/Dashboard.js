@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [lectures, setLectures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeLecture, setActiveLecture] = useState(null);
+  const [lectureQuizzes, setLectureQuizzes] = useState({}); // Map of lectureId -> quiz count
   const [searchParams] = useSearchParams();
   const professorId = searchParams.get("professorId");
 
@@ -71,6 +72,24 @@ const Dashboard = () => {
         : "/api/lectures";
       const response = await axios.get(url);
       setLectures(response.data.lectures);
+
+      // Fetch quiz counts for each completed lecture (for students)
+      if (user.role === "student") {
+        const quizCounts = {};
+        for (const lecture of response.data.lectures) {
+          if (lecture.status === "completed") {
+            try {
+              const quizResponse = await axios.get(
+                `/api/quizzes/lecture/${lecture._id}`
+              );
+              quizCounts[lecture._id] = quizResponse.data.quizzes.length;
+            } catch (err) {
+              quizCounts[lecture._id] = 0;
+            }
+          }
+        }
+        setLectureQuizzes(quizCounts);
+      }
     } catch (error) {
       console.error("Error fetching lectures:", error);
       toast.error("Failed to fetch lectures");
@@ -404,6 +423,15 @@ const Dashboard = () => {
                       {lecture.notes.length} notes
                     </div>
 
+                    {user.role === "student" &&
+                      lectureQuizzes[lecture._id] > 0 && (
+                        <div className="flex items-center text-sm text-purple-600">
+                          <Award className="h-4 w-4 mr-2" />
+                          {lectureQuizzes[lecture._id]} quiz
+                          {lectureQuizzes[lecture._id] > 1 ? "zes" : ""} available
+                        </div>
+                      )}
+
                     <div className="pt-4 border-t border-gray-200">
                       {user.role === "teacher" ? (
                         <div className="flex space-x-2">
@@ -435,33 +463,48 @@ const Dashboard = () => {
                           </Link>
                         </div>
                       ) : (
-                        <div className="flex space-x-2">
-                          {lecture.status === "active" && (
-                            <button
-                              onClick={() => handleJoinLecture(lecture._id)}
-                              className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
-                            >
-                              <Play className="h-4 w-4" />
-                              <span>Join</span>
-                            </button>
-                          )}
+                        <div className="space-y-2">
+                          <div className="flex space-x-2">
+                            {lecture.status === "active" && (
+                              <button
+                                onClick={() => handleJoinLecture(lecture._id)}
+                                className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
+                              >
+                                <Play className="h-4 w-4" />
+                                <span>Join</span>
+                              </button>
+                            )}
 
-                          {lecture.status === "completed" && (
+                            {lecture.status === "completed" && (
+                              <Link
+                                to={`/lecture/${lecture._id}/notes`}
+                                className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
+                              >
+                                <BookOpen className="h-4 w-4" />
+                                <span>View Notes</span>
+                              </Link>
+                            )}
+
                             <Link
-                              to={`/lecture/${lecture._id}/notes`}
-                              className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
+                              to={`/blackboard/${lecture._id}`}
+                              className="btn btn-secondary flex-1 text-center"
                             >
-                              <BookOpen className="h-4 w-4" />
-                              <span>View Notes</span>
+                              View
                             </Link>
-                          )}
+                          </div>
 
-                          <Link
-                            to={`/blackboard/${lecture._id}`}
-                            className="btn btn-secondary flex-1 text-center"
-                          >
-                            View
-                          </Link>
+                          {lecture.status === "completed" &&
+                            lectureQuizzes[lecture._id] > 0 && (
+                              <Link
+                                to={`/lecture/${lecture._id}/quiz`}
+                                className="btn w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white"
+                              >
+                                <Award className="h-4 w-4" />
+                                <span>
+                                  Take Quiz ({lectureQuizzes[lecture._id]})
+                                </span>
+                              </Link>
+                            )}
                         </div>
                       )}
                     </div>
