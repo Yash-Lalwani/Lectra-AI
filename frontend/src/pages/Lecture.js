@@ -34,6 +34,8 @@ function Lecture() {
   const [activePoll, setActivePoll] = useState(null);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
   const streamRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -246,9 +248,82 @@ function Lecture() {
       await axios.post(`/api/lectures/${id}/end`);
       setLecture((prev) => ({ ...prev, status: "ended" }));
       toast.success("Lecture ended!");
-      // Optionally navigate or show summary
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to end lecture");
+    }
+  };
+
+  const generateSummaryPDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      const response = await axios.post(
+        `/api/files/lecture/${id}/summary`,
+        {},
+        {
+          responseType: "blob",
+        }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `lecture-summary-${lecture.title.replace(/\s+/g, "-")}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("PDF summary generated and downloaded!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to generate PDF");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const generateQuiz = async () => {
+    try {
+      setIsGeneratingQuiz(true);
+
+      // Generate quiz questions from the markdown content using Gemini
+      const quizResponse = await axios.post(
+        `/api/files/lecture/${id}/generate-quiz`,
+        {
+          content: markdownContent,
+        }
+      );
+
+      if (quizResponse.data.success) {
+        const quiz = quizResponse.data.quiz;
+
+        // Create individual quiz questions in the database
+        for (const questionData of quiz.questions) {
+          await axios.post(`/api/quizzes`, {
+            lecture: id,
+            type: "multiple_choice",
+            question: questionData.question,
+            options: questionData.options,
+            correctAnswer: questionData.correctAnswer,
+            timeLimit: 30,
+            explanation: questionData.explanation,
+          });
+        }
+
+        toast.success(
+          `Quiz generated successfully! Created ${quiz.questions.length} questions.`
+        );
+      } else {
+        toast.error("Failed to generate quiz questions");
+      }
+    } catch (err) {
+      console.error("Quiz generation error:", err);
+      toast.error(err.response?.data?.message || "Failed to generate quiz");
+    } finally {
+      setIsGeneratingQuiz(false);
     }
   };
 
@@ -400,6 +475,184 @@ function Lecture() {
             )}
           </div>
         )}
+      </div>
+    );
+  }
+
+  // Post-lecture mode - show summary and quiz options
+  if (lecture.status === "ended") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col">
+        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">
+            {lecture.title} - Lecture Ended
+          </h1>
+          <div className="flex items-center space-x-4">
+            <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
+              Ended
+            </span>
+            <span className="text-gray-600">
+              Participants: {participants.length}
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto">
+            {/* Post-Lecture Actions */}
+            <div className="bg-white rounded-lg shadow-md p-8 mb-6">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+                📚 Post-Lecture Actions
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* PDF Generation */}
+                <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-800">
+                        Generate Summary PDF
+                      </h3>
+                      <p className="text-blue-600 text-sm">
+                        Create a comprehensive PDF summary of your lecture
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={generateSummaryPDF}
+                    disabled={isGeneratingPDF}
+                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isGeneratingPDF ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Generating PDF...
+                      </>
+                    ) : (
+                      "📄 Generate PDF Summary"
+                    )}
+                  </button>
+                </div>
+
+                {/* Quiz Generation */}
+                <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mr-4">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-800">
+                        Generate Quiz
+                      </h3>
+                      <p className="text-purple-600 text-sm">
+                        Create quiz questions based on your lecture notes
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={generateQuiz}
+                    disabled={isGeneratingQuiz}
+                    className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isGeneratingQuiz ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Generating Quiz...
+                      </>
+                    ) : (
+                      "🎯 Generate Quiz Questions"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Lecture Notes Review */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                📝 Lecture Notes Review
+              </h3>
+              <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                {markdownContent ? (
+                  <div className="prose prose-sm max-w-none prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {markdownContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">
+                    No notes were generated during this lecture.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }

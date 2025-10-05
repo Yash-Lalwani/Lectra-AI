@@ -22,8 +22,7 @@ class GeminiService {
         - Insert emojis to enhance readability and engagement (📝 📚 💡 🔍 ⚡ 📊 🎯).
         - Use triple backticks (\`\`\`) for code or technical examples.
         - Ensure proper spacing, tabbing and blank lines between sections for readability.
-        - Keep the output concise but comprehensive—avoid unnecessary filler.
-        - improve the explanation of the concepts and the examples in brief and to the point.
+        - Keep the output concise but comprehensive — avoid unnecessary filler.
         
         If the transcript is empty, return the existing markdown content.
         If existing markdown is provided:
@@ -42,7 +41,6 @@ class GeminiService {
         Return ONLY the final markdown content (existing + new). 
         Do not add explanations, instructions, or extra commentary outside of the markdown.
       `;
-
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
@@ -142,6 +140,59 @@ class GeminiService {
       console.error("Gemini summary generation error:", error);
       return {
         summary: "",
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  async generateQuiz(content, numQuestions = 5) {
+    try {
+      const prompt = `
+        Based on the following lecture notes in markdown format, generate ${numQuestions} multiple-choice quiz questions.
+        
+        Requirements:
+        - Questions should test understanding of key concepts from the notes
+        - Each question should have 4 options (A, B, C, D)
+        - Only one correct answer per question
+        - Questions should be clear and unambiguous
+        - Focus on the most important topics covered
+        
+        Lecture Notes: ${content}
+        
+        Respond with JSON in this format:
+        {
+          "questions": [
+            {
+              "question": "Question text here?",
+              "options": ["Option A", "Option B", "Option C", "Option D"],
+              "correctAnswer": 0,
+              "explanation": "Brief explanation of the correct answer"
+            }
+          ]
+        }
+      `;
+
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+
+      try {
+        const quizData = JSON.parse(response.text());
+        return {
+          quiz: quizData,
+          success: true,
+        };
+      } catch (parseError) {
+        return {
+          quiz: null,
+          success: false,
+          error: "Failed to parse quiz response",
+        };
+      }
+    } catch (error) {
+      console.error("Gemini quiz generation error:", error);
+      return {
+        quiz: null,
         success: false,
         error: error.message,
       };

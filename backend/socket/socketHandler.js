@@ -164,6 +164,15 @@ module.exports = (io) => {
                 lectureRoom.notes = [note];
 
                 // Broadcast updated markdown to all students
+                console.log(
+                  "Broadcasting markdown to room:",
+                  socket.currentLectureId
+                );
+                console.log("Room participants:", {
+                  teacher: !!lectureRoom.teacherSocket,
+                  students: lectureRoom.studentSockets.size,
+                });
+
                 socket
                   .to(socket.currentLectureId)
                   .emit("markdown-updated", note);

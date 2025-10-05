@@ -423,4 +423,51 @@ router.get("/:filename", async (req, res) => {
   }
 });
 
+// Generate quiz questions from lecture notes
+router.post("/lecture/:id/generate-quiz", requireTeacher, async (req, res) => {
+  try {
+    const lecture = await Lecture.findById(req.params.id);
+
+    if (!lecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+
+    if (!lecture.teacher.equals(req.user._id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { content } = req.body;
+
+    if (!content) {
+      return res
+        .status(400)
+        .json({ message: "No content provided for quiz generation" });
+    }
+
+    // Generate quiz questions using Gemini
+    const quizResult = await geminiService.generateQuiz(content);
+
+    if (quizResult.success) {
+      res.json({
+        success: true,
+        quiz: quizResult.quiz,
+        message: "Quiz generated successfully",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate quiz",
+        error: quizResult.error,
+      });
+    }
+  } catch (error) {
+    console.error("Quiz generation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
