@@ -150,4 +150,18 @@ router.get("/verify", authenticateToken, (req, res) => {
   });
 });
 
+// Get all professors (for student professor selection)
+router.get("/professors", authenticateToken, async (req, res) => {
+  try {
+    const professors = await User.find({ role: "teacher", isActive: true })
+      .select("firstName lastName email")
+      .sort({ firstName: 1, lastName: 1 });
+
+    res.json(professors);
+  } catch (error) {
+    console.error("Error fetching professors:", error);
+    res.status(500).json({ message: "Server error fetching professors" });
+  }
+});
+
 module.exports = router;

@@ -132,18 +132,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post("/api/auth/register", userData);
 
-      const { user, token } = response.data;
+      const { user } = response.data;
 
-      localStorage.setItem("token", token);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
+      // Don't auto-login, just show success message
       dispatch({
-        type: "LOGIN_SUCCESS",
-        payload: { user, token },
+        type: "LOGIN_FAILURE", // Reset loading state
+        payload: null,
       });
 
-      toast.success(`Welcome to Lectra, ${user.firstName}!`);
-      return { success: true };
+      toast.success(`Account created successfully! Please sign in.`);
+      return { success: true, user };
     } catch (error) {
       const message = error.response?.data?.message || "Registration failed";
       dispatch({

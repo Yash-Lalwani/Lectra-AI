@@ -60,27 +60,48 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-primary-100">
-            <BookOpen className="h-6 w-6 text-primary-600" />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-50">
+      {/* Header/Navbar */}
+      <header className="bg-white/80 backdrop-blur-md shadow-sm">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gradient-to-br from-primary-600 to-blue-600 p-2 rounded-xl">
+                <BookOpen className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
+                  Lectra
+                </h1>
+                <p className="text-xs text-gray-600">AI-Powered Learning</p>
+              </div>
+            </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            {isLogin ? "Sign in to your account" : "Create your account"}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
-            >
-              {isLogin ? "Sign up" : "Sign in"}
-            </button>
-          </p>
-        </div>
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          {/* Form Header */}
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900">
+              {isLogin ? "Welcome Back" : "Get Started"}
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              {isLogin ? "Sign in to continue to Lectra" : "Create your Lectra account"}
+            </p>
+            <p className="mt-4 text-sm text-gray-600">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                {isLogin ? "Sign up" : "Sign in"}
+              </button>
+            </p>
+          </div>
 
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -228,17 +249,18 @@ const Login = () => {
           </div>
         </form>
 
-        {/* Demo accounts */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">
-            Demo Accounts:
-          </h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>
-              <strong>Teacher:</strong> teacher@demo.com / password123
-            </div>
-            <div>
-              <strong>Student:</strong> student@demo.com / password123
+          {/* Demo accounts */}
+          <div className="mt-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">
+              Demo Accounts:
+            </h3>
+            <div className="text-xs text-gray-600 space-y-1">
+              <div>
+                <strong className="text-primary-600">Teacher:</strong> teacher@demo.com / password123
+              </div>
+              <div>
+                <strong className="text-blue-600">Student:</strong> student@demo.com / password123
+              </div>
             </div>
           </div>
         </div>

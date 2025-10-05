@@ -35,6 +35,7 @@ router.post("/", requireTeacher, async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     let lectures;
+    const { teacherId } = req.query;
 
     if (req.user.role === "teacher") {
       // Teachers see their own lectures
@@ -42,10 +43,16 @@ router.get("/", async (req, res) => {
         .populate("teacher", "firstName lastName email")
         .sort({ createdAt: -1 });
     } else {
-      // Students see all active or completed lectures
-      lectures = await Lecture.find({
+      // Students see lectures filtered by teacher if provided
+      const query = {
         status: { $in: ["active", "completed"] },
-      })
+      };
+
+      if (teacherId) {
+        query.teacher = teacherId;
+      }
+
+      lectures = await Lecture.find(query)
         .populate("teacher", "firstName lastName email")
         .sort({ createdAt: -1 });
     }

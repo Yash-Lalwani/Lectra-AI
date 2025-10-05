@@ -9,7 +9,8 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./pages/Login";
+import Landing from "./pages/Landing";
+import SelectProfessor from "./pages/SelectProfessor";
 import Dashboard from "./pages/Dashboard";
 import Lecture from "./pages/Lecture";
 import Blackboard from "./pages/Blackboard";
@@ -22,12 +23,13 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Landing />} />
               <Route
-                path="/"
+                path="/select-professor"
                 element={
-                  <ProtectedRoute>
-                    <Navigate to="/dashboard" replace />
+                  <ProtectedRoute requireRole="student">
+                    <SelectProfessor />
                   </ProtectedRoute>
                 }
               />

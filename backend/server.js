@@ -5,7 +5,18 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-require("dotenv").config();
+// Load .env from current folder, and also attempt to load from project root if present
+const dotenv = require("dotenv");
+const path = require("path");
+
+// Load .env in backend folder first
+dotenv.config();
+
+// If essential env vars like DEEPGRAM_API_KEY are not set, try loading root .env
+if (!process.env.DEEPGRAM_API_KEY) {
+  const rootEnvPath = path.resolve(__dirname, "..", ".env");
+  dotenv.config({ path: rootEnvPath });
+}
 
 const authRoutes = require("./routes/auth");
 const lectureRoutes = require("./routes/lectures");

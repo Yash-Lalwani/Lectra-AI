@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import axios from "axios";
@@ -16,12 +16,27 @@ import {
   Settings,
   Calendar,
   TrendingUp,
+  RefreshCw,
+  Mic,
+  Brain,
+  Zap,
+  FileText,
+  Headphones,
+  Presentation,
+  Lightbulb,
+  PenTool,
+  MessageSquare,
+  Award,
+  Sparkles,
+  BookMarked,
 } from "lucide-react";
 
 const Dashboard = () => {
   const [lectures, setLectures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeLecture, setActiveLecture] = useState(null);
+  const [searchParams] = useSearchParams();
+  const professorId = searchParams.get("professorId");
 
   const { user, logout } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -29,7 +44,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchLectures();
-  }, []);
+  }, [professorId]);
 
   useEffect(() => {
     if (socket) {
@@ -51,7 +66,10 @@ const Dashboard = () => {
 
   const fetchLectures = async () => {
     try {
-      const response = await axios.get("/api/lectures");
+      const url = professorId
+        ? `/api/lectures?teacherId=${professorId}`
+        : "/api/lectures";
+      const response = await axios.get(url);
       setLectures(response.data.lectures);
     } catch (error) {
       console.error("Error fetching lectures:", error);
@@ -121,16 +139,73 @@ const Dashboard = () => {
     }
   };
 
+  // Floating icons configuration
+  const floatingIcons = [
+    { Icon: BookOpen, delay: 0, duration: 20, x: "10%", y: "20%" },
+    { Icon: Mic, delay: 2, duration: 25, x: "80%", y: "15%" },
+    { Icon: Brain, delay: 4, duration: 22, x: "15%", y: "70%" },
+    { Icon: Users, delay: 1, duration: 24, x: "85%", y: "65%" },
+    { Icon: FileText, delay: 3, duration: 23, x: "5%", y: "45%" },
+    { Icon: Headphones, delay: 5, duration: 21, x: "90%", y: "40%" },
+    { Icon: Presentation, delay: 2.5, duration: 26, x: "25%", y: "85%" },
+    { Icon: Lightbulb, delay: 1.5, duration: 24, x: "75%", y: "80%" },
+    { Icon: PenTool, delay: 4.5, duration: 22, x: "50%", y: "10%" },
+    { Icon: MessageSquare, delay: 3.5, duration: 25, x: "60%", y: "90%" },
+    { Icon: Award, delay: 0.5, duration: 23, x: "95%", y: "25%" },
+    { Icon: TrendingUp, delay: 5.5, duration: 21, x: "40%", y: "5%" },
+    { Icon: Sparkles, delay: 2.8, duration: 24, x: "70%", y: "50%" },
+    { Icon: BookMarked, delay: 4.2, duration: 22, x: "30%", y: "35%" },
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Animated Background Icons */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {floatingIcons.map(({ Icon, delay, duration, x, y }, index) => (
+          <div
+            key={index}
+            className="absolute opacity-10"
+            style={{
+              left: x,
+              top: y,
+              animation: `float ${duration}s ease-in-out ${delay}s infinite`,
+            }}
+          >
+            <Icon className="h-12 w-12 text-primary-600" />
+          </div>
+        ))}
+      </div>
+
+      {/* Add keyframes animation */}
+      <style>
+        {`
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px) rotate(0deg);
+            }
+            25% {
+              transform: translateY(-20px) rotate(5deg);
+            }
+            50% {
+              transform: translateY(0px) rotate(0deg);
+            }
+            75% {
+              transform: translateY(20px) rotate(-5deg);
+            }
+          }
+        `}
+      </style>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen bg-transparent">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -151,6 +226,15 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center space-x-4">
+              {user.role === "student" && (
+                <button
+                  onClick={() => navigate("/select-professor")}
+                  className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Change Professor</span>
+                </button>
+              )}
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-700">
@@ -372,6 +456,7 @@ const Dashboard = () => {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

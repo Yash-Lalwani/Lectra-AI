@@ -1,15 +1,31 @@
 const { createClient, LiveTranscriptionEvents } = require("@deepgram/sdk");
-
 class SpeechService {
   constructor() {
-    this.deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+    this.deepgram = null;
     this.connections = new Map(); // Store active connections per socket
+  }
+
+  // Lazy-initialize Deepgram client so missing env vars can be handled gracefully
+  _getClient() {
+    if (this.deepgram) return this.deepgram;
+
+    const key = process.env.DEEPGRAM_API_KEY;
+    if (!key) {
+      // Throw a more actionable error so it's clear how to fix it
+      throw new Error(
+        "Deepgram API key not set. Please add DEEPGRAM_API_KEY to your environment or .env (copy root .env into backend/.env or set in your shell)."
+      );
+    }
+
+    this.deepgram = createClient(key);
+    return this.deepgram;
   }
 
   // Create a new streaming connection for a socket
   createStreamingConnection(socket, onTranscript) {
     try {
-      const connection = this.deepgram.listen.live({
+      const client = this._getClient();
+      const connection = client.listen.live({
         model: "nova-3",
         language: "en-US",
         punctuate: true,
@@ -113,7 +129,8 @@ class SpeechService {
   // Legacy method for compatibility (not used in streaming)
   async transcribeAudio(audioBuffer) {
     try {
-      const response = await this.deepgram.listen.prerecorded.transcribeFile(
+      const client = this._getClient();
+      const response = await client.listen.prerecorded.transcribeFile(
         audioBuffer,
         {
           model: "nova-3",
@@ -123,12 +140,7 @@ class SpeechService {
         }
       );
 
-      if (
-        response.result &&
-        response.result.results &&
-        response.result.results.channels &&
-        response.result.results.channels.length > 0
-      ) {
+      if (response?.result?.results?.channels?.length > 0) {
         const channel = response.result.results.channels[0];
         if (channel.alternatives && channel.alternatives.length > 0) {
           const alternative = channel.alternatives[0];
