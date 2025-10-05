@@ -44,6 +44,7 @@ const Blackboard = () => {
   useEffect(() => {
     if (socket && lecture) {
       // Join lecture room
+      console.log("Student joining lecture room:", id);
       socket.emit("join-lecture", { lectureId: id });
 
       // Socket event listeners
@@ -55,6 +56,10 @@ const Blackboard = () => {
       });
 
       socket.on("markdown-updated", (note) => {
+        console.log(
+          "Student received markdown update:",
+          note.content?.substring(0, 50) + "..."
+        );
         setMarkdownContent(note.content);
       });
 
