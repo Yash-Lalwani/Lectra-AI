@@ -41,7 +41,6 @@ module.exports = (io) => {
     socket.on("join-lecture", async (data) => {
       try {
         const { lectureId } = data;
-
         // Verify lecture exists and user has access
         const lecture = await Lecture.findById(lectureId);
         if (!lecture) {
@@ -107,59 +106,109 @@ module.exports = (io) => {
       }
     });
 
-    // Handle audio chunks from teacher
-    socket.on("audio-chunk", async (data) => {
+    // Handle start recording from teacher
+    socket.on("start-recording", async (data) => {
       try {
         if (socket.userRole !== "teacher" || !socket.currentLectureId) {
           socket.emit("error", { message: "Unauthorized" });
           return;
         }
 
-        const { audioData } = data;
-        const audioBuffer = Buffer.from(audioData, "base64");
+        // Create streaming connection with callback for transcript processing
+        const onTranscript = async (transcription) => {
+          console.log("Processing transcript:", transcription.text);
+          if (transcription.success && transcription.text.trim()) {
+            const lectureRoom = activeLectures.get(socket.currentLectureId);
+            if (!lectureRoom) {
+              console.log("No lecture room found");
+              return;
+            }
 
-        // Transcribe audio
-        const transcription = await speechService.streamTranscribe(audioBuffer);
-
-        if (transcription.success && transcription.text.trim()) {
-          const lectureRoom = activeLectures.get(socket.currentLectureId);
-          if (!lectureRoom) return;
-
-          // Check for voice commands
-          const commandDetection = await geminiService.detectCommand(
-            transcription.text
-          );
-
-          if (commandDetection.success && commandDetection.hasCommand) {
-            await handleVoiceCommand(socket, commandDetection, lectureRoom);
-          } else {
-            // Generate notes from normal speech
-            const notesResult = await geminiService.generateNotes(
+            // Check for voice commands
+            const commandDetection = await geminiService.detectCommand(
               transcription.text
             );
 
-            if (notesResult.success) {
-              // Add note to lecture room
-              const note = {
-                content: notesResult.notes,
-                timestamp: Date.now(),
-                slideNumber: lectureRoom.currentSlide,
-              };
+            if (commandDetection.success && commandDetection.hasCommand) {
+              console.log("Voice command detected:", commandDetection.command);
+              await handleVoiceCommand(socket, commandDetection, lectureRoom);
+            } else {
+              // Generate notes from normal speech
+              console.log("Generating notes for:", transcription.text);
+              const notesResult = await geminiService.generateNotes(
+                transcription.text
+              );
 
-              lectureRoom.notes.push(note);
+              console.log("Notes result:", notesResult);
 
-              // Broadcast to all students
-              socket.to(socket.currentLectureId).emit("new-note", note);
-              socket.emit("note-added", note);
+              if (notesResult.success) {
+                // Add note to lecture room
+                const note = {
+                  content: notesResult.notes,
+                  timestamp: Date.now(),
+                  slideNumber: lectureRoom.currentSlide,
+                };
 
-              // Save to database
-              await saveNoteToDatabase(socket.currentLectureId, note);
+                lectureRoom.notes.push(note);
+
+                // Broadcast to all students
+                socket.to(socket.currentLectureId).emit("new-note", note);
+                socket.emit("note-added", note);
+
+                console.log("Note added:", note.content);
+
+                // Save to database
+                await saveNoteToDatabase(socket.currentLectureId, note);
+              }
             }
           }
-        }
+        };
+
+        // Create the streaming connection
+        speechService.createStreamingConnection(socket, onTranscript);
+
+        socket.emit("recording-started");
       } catch (error) {
-        console.error("Audio processing error:", error);
-        socket.emit("error", { message: "Failed to process audio" });
+        console.error("Error starting recording:", error);
+        socket.emit("error", { message: "Failed to start recording" });
+      }
+    });
+
+    // Handle audio data from teacher (raw audio bytes)
+    socket.on("audio-data", (data) => {
+      try {
+        console.log(
+          "Audio data received from:",
+          socket.user?.email,
+          "Size:",
+          data.audioBuffer?.byteLength
+        );
+
+        if (socket.userRole !== "teacher" || !socket.currentLectureId) {
+          console.log("Rejecting audio - not teacher or no lecture");
+          return;
+        }
+
+        const { audioBuffer } = data;
+        speechService.sendAudio(socket, audioBuffer);
+      } catch (error) {
+        console.error("Error processing audio data:", error);
+      }
+    });
+
+    // Handle stop recording from teacher
+    socket.on("stop-recording", () => {
+      try {
+        if (socket.userRole !== "teacher") {
+          return;
+        }
+
+        // Close the streaming connection
+        speechService.closeConnection(socket);
+
+        socket.emit("recording-stopped");
+      } catch (error) {
+        console.error("Error stopping recording:", error);
       }
     });
 
@@ -200,6 +249,9 @@ module.exports = (io) => {
     // Handle disconnect
     socket.on("disconnect", () => {
       console.log(`User ${socket.user?.email} disconnected`);
+
+      // Clean up streaming connection
+      speechService.closeConnection(socket);
 
       userSockets.delete(socket.userId);
 

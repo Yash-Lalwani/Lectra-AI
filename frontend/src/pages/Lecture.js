@@ -35,9 +35,10 @@ const Lecture = () => {
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [participants, setParticipants] = useState([]);
 
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const processorRef = useRef(null);
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     if (user.role !== "teacher") {
@@ -103,6 +104,14 @@ const Lecture = () => {
         toast.info(`${data.user.name} left the lecture`);
       });
 
+      socket.on("recording-started", () => {
+        // Recording started successfully
+      });
+
+      socket.on("recording-stopped", () => {
+        // Recording stopped successfully
+      });
+
       socket.on("error", (error) => {
         toast.error(error.message);
       });
@@ -118,6 +127,8 @@ const Lecture = () => {
         socket.off("quiz-ended");
         socket.off("participant-joined");
         socket.off("participant-left");
+        socket.off("recording-started");
+        socket.off("recording-stopped");
         socket.off("error");
       };
     }
@@ -140,7 +151,7 @@ const Lecture = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 48000,
+          sampleRate: 16000, // Deepgram expects 16kHz
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
@@ -149,35 +160,48 @@ const Lecture = () => {
 
       streamRef.current = stream;
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm;codecs=opus",
+      // Create Web Audio API context
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)({
+        sampleRate: 16000,
       });
 
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      // Store references for cleanup
+      audioContextRef.current = audioContext;
+      processorRef.current = processor;
 
-          // Send audio chunk to server
-          if (socket) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const base64Audio = reader.result.split(",")[1];
-              socket.emit("audio-chunk", { audioData: base64Audio });
-            };
-            reader.readAsDataURL(event.data);
+      processor.onaudioprocess = (event) => {
+        if (socket && isRecordingRef.current) {
+          const inputBuffer = event.inputBuffer;
+          const inputData = inputBuffer.getChannelData(0);
+
+          // Convert float32 to int16 PCM
+          const pcmData = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcmData[i] = Math.max(
+              -32768,
+              Math.min(32767, inputData[i] * 32768)
+            );
           }
+
+          // Send raw PCM data to server
+          socket.emit("audio-data", { audioBuffer: pcmData.buffer });
         }
       };
 
-      mediaRecorder.onstop = () => {
-        // Handle recording stop
-      };
+      source.connect(processor);
+      processor.connect(audioContext.destination);
 
-      mediaRecorder.start(1000); // Send chunks every second
+      // Notify server that recording started
+      if (socket) {
+        socket.emit("start-recording");
+      }
+
       setIsRecording(true);
+      isRecordingRef.current = true;
       toast.success("Recording started");
     } catch (error) {
       console.error("Error starting recording:", error);
@@ -188,11 +212,20 @@ const Lecture = () => {
   };
 
   const stopRecording = () => {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
-      mediaRecorderRef.current.stop();
+    // Notify server that recording stopped
+    if (socket) {
+      socket.emit("stop-recording");
+    }
+
+    // Clean up Web Audio API
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
     }
 
     if (streamRef.current) {
@@ -201,6 +234,7 @@ const Lecture = () => {
     }
 
     setIsRecording(false);
+    isRecordingRef.current = false;
     toast.success("Recording stopped");
   };
 
