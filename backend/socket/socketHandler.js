@@ -73,6 +73,7 @@ module.exports = (io) => {
             studentSockets: new Set(),
             currentSlide: 1,
             notes: [],
+            markdownContent: "",
           });
         }
 
@@ -90,6 +91,7 @@ module.exports = (io) => {
           currentSlide: lectureRoom.currentSlide,
           notes: lectureRoom.notes,
           slides: lecture.slides,
+          markdownContent: lectureRoom.markdownContent,
         });
 
         // Notify other users about new participant
@@ -135,27 +137,42 @@ module.exports = (io) => {
             } else {
               // Generate notes from normal speech
               console.log("Generating notes for:", transcription.text);
+
+              // Get existing markdown content
+              const existingMarkdown = lectureRoom.markdownContent || "";
+
               const notesResult = await geminiService.generateNotes(
-                transcription.text
+                transcription.text,
+                existingMarkdown
               );
 
               console.log("Notes result:", notesResult);
 
               if (notesResult.success) {
-                // Add note to lecture room
+                // Update the single markdown document
+                lectureRoom.markdownContent = notesResult.notes;
+
+                // Create a single note object with the complete markdown
                 const note = {
                   content: notesResult.notes,
                   timestamp: Date.now(),
                   slideNumber: lectureRoom.currentSlide,
+                  isMarkdown: true,
                 };
 
-                lectureRoom.notes.push(note);
+                // Replace the notes array with a single markdown note
+                lectureRoom.notes = [note];
 
-                // Broadcast to all students
-                socket.to(socket.currentLectureId).emit("new-note", note);
-                socket.emit("note-added", note);
+                // Broadcast updated markdown to all students
+                socket
+                  .to(socket.currentLectureId)
+                  .emit("markdown-updated", note);
+                socket.emit("markdown-updated", note);
 
-                console.log("Note added:", note.content);
+                console.log(
+                  "Markdown updated:",
+                  note.content.substring(0, 100) + "..."
+                );
 
                 // Save to database
                 await saveNoteToDatabase(socket.currentLectureId, note);

@@ -17,7 +17,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3001",
     methods: ["GET", "POST"],
   },
 });
@@ -26,7 +26,7 @@ const io = socketIo(server, {
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3001",
     credentials: true,
   })
 );

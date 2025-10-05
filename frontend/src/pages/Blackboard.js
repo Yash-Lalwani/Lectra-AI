@@ -4,6 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import axios from "axios";
 import toast from "react-hot-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   ArrowLeft,
   Users,
@@ -27,6 +29,7 @@ const Blackboard = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(1);
   const [notes, setNotes] = useState([]);
+  const [markdownContent, setMarkdownContent] = useState("");
   const [activePoll, setActivePoll] = useState(null);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -47,7 +50,12 @@ const Blackboard = () => {
       socket.on("lecture-state", (data) => {
         setCurrentSlide(data.currentSlide || 1);
         setNotes(data.notes || []);
+        setMarkdownContent(data.markdownContent || "");
         setIsConnected(true);
+      });
+
+      socket.on("markdown-updated", (note) => {
+        setMarkdownContent(note.content);
       });
 
       socket.on("new-note", (note) => {
@@ -330,37 +338,24 @@ const Blackboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {notes.length === 0 ? (
+              <div className="max-h-96 overflow-y-auto">
+                {markdownContent ? (
+                  <div className="text-white prose prose-invert prose-lg max-w-none prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {markdownContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
                   <div className="text-center py-12">
                     <MessageSquare className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                     <p className="text-gray-400 text-lg">
                       Waiting for notes...
                     </p>
                     <p className="text-gray-500 text-sm mt-2">
-                      Notes will appear here as the teacher speaks
+                      Beautiful markdown notes will appear here as the teacher
+                      speaks
                     </p>
                   </div>
-                ) : (
-                  notes.map((note, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-700 rounded-lg p-4 border border-gray-600"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-300">
-                          Slide {note.slideNumber}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(note.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div
-                        className="text-white prose prose-invert prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: note.content }}
-                      />
-                    </div>
-                  ))
                 )}
               </div>
             </div>
