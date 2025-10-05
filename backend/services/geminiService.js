@@ -3,21 +3,46 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 class GeminiService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   }
 
-  async generateNotes(transcript) {
+  async generateNotes(transcript, existingMarkdown = "") {
     try {
       const prompt = `
-        Convert the following lecture transcript into clean, organized bullet-point notes. 
-        Focus on key concepts, important details, and actionable information.
-        Use proper formatting with bullet points and sub-bullets where appropriate.
-        Make it concise but comprehensive.
+        Convert the following lecture transcript into well-structured, visually appealing markdown notes.
 
-        Transcript: ${transcript}
+        Guidelines:
+        - Focus on key concepts, important details, and actionable insights.
+        - Organize content with clear hierarchy using markdown syntax:
+          - # for main topics
+          - ## for subtopics
+          - ### for smaller sections if needed
+        - Use bullet points (-) for lists and keep them concise.
+        - Apply **bold** for emphasis, *italic* for secondary notes.
+        - Insert emojis to enhance readability and engagement (📝 📚 💡 🔍 ⚡ 📊 🎯).
+        - Use triple backticks (\`\`\`) for code or technical examples.
+        - Ensure proper spacing, tabbing and blank lines between sections for readability.
+        - Keep the output concise but comprehensive—avoid unnecessary filler.
+        - improve the explanation of the concepts and the examples in brief and to the point.
+        
+        If the transcript is empty, return the existing markdown content.
+        If existing markdown is provided:
+        - Append new content seamlessly without repeating information.
+        - Maintain the same style, tone, and formatting consistency.
 
-        Format the response as clean HTML with proper bullet points using <ul> and <li> tags.
+        Transcript:
+        ${transcript}
+
+        ${
+          existingMarkdown
+            ? `Existing markdown content:\n${existingMarkdown}\n\nPlease append new content while preserving consistency.`
+            : ""
+        }
+
+        Return ONLY the final markdown content (existing + new). 
+        Do not add explanations, instructions, or extra commentary outside of the markdown.
       `;
+
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
@@ -28,7 +53,7 @@ class GeminiService {
     } catch (error) {
       console.error("Gemini notes generation error:", error);
       return {
-        notes: "",
+        notes: existingMarkdown, // Return existing content if error
         success: false,
         error: error.message,
       };
