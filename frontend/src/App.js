@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Lecture from "./pages/Lecture";
 import Blackboard from "./pages/Blackboard";
 import CreateLecture from "./pages/CreateLecture";
+import LectureNotes from "./pages/LectureNotes";
 
 function App() {
   return (
@@ -62,6 +63,14 @@ function App() {
                 element={
                   <ProtectedRoute requireRole="teacher">
                     <CreateLecture />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lecture/:id/notes"
+                element={
+                  <ProtectedRoute requireRole="student">
+                    <LectureNotes />
                   </ProtectedRoute>
                 }
               />

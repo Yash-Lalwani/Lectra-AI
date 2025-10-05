@@ -246,7 +246,7 @@ function Lecture() {
   const endLecture = async () => {
     try {
       await axios.post(`/api/lectures/${id}/end`);
-      setLecture((prev) => ({ ...prev, status: "ended" }));
+      setLecture((prev) => ({ ...prev, status: "completed" }));
       toast.success("Lecture ended!");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to end lecture");
@@ -303,13 +303,12 @@ function Lecture() {
         // Create individual quiz questions in the database
         for (const questionData of quiz.questions) {
           await axios.post(`/api/quizzes`, {
-            lecture: id,
-            type: "multiple_choice",
+            lectureId: id,
+            type: "quiz",
             question: questionData.question,
             options: questionData.options,
             correctAnswer: questionData.correctAnswer,
             timeLimit: 30,
-            explanation: questionData.explanation,
           });
         }
 
@@ -480,7 +479,7 @@ function Lecture() {
   }
 
   // Post-lecture mode - show summary and quiz options
-  if (lecture.status === "ended") {
+  if (lecture.status === "completed") {
     return (
       <div className="min-h-screen bg-gray-100 flex flex-col">
         <header className="bg-white shadow-sm p-4 flex justify-between items-center">
@@ -686,20 +685,25 @@ function Lecture() {
             Participants: {participants.length}
           </span>
           <button
-            onClick={startLecture}
-            disabled={lecture.status === "active"}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={lecture.status === "active" ? endLecture : startLecture}
+            className={`px-4 py-2 text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${
+              lecture.status === "active"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+            disabled={lecture.status === "completed"}
           >
-            <Play className="inline-block mr-2" size={18} />
-            Start Lecture
-          </button>
-          <button
-            onClick={endLecture}
-            disabled={lecture.status === "ended"}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <StopCircle className="inline-block mr-2" size={18} />
-            End Lecture
+            {lecture.status === "active" ? (
+              <>
+                <StopCircle className="inline-block mr-2" size={18} />
+                End Lecture
+              </>
+            ) : (
+              <>
+                <Play className="inline-block mr-2" size={18} />
+                Start Lecture
+              </>
+            )}
           </button>
         </div>
       </header>

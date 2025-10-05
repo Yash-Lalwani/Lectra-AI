@@ -83,6 +83,11 @@ module.exports = (io) => {
           lectureRoom.teacherSocket = socket;
         } else {
           lectureRoom.studentSockets.add(socket);
+          // Add student to participants list if not already there
+          if (!lecture.participants.includes(socket.userId)) {
+            lecture.participants.push(socket.userId);
+            await lecture.save();
+          }
         }
 
         // Send current lecture state to the user

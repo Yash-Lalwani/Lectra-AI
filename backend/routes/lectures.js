@@ -296,4 +296,54 @@ router.delete("/:id", requireTeacher, async (req, res) => {
   }
 });
 
+// Get lecture notes for students (accessible after lecture ends)
+router.get("/:id/notes", async (req, res) => {
+  try {
+    const lecture = await Lecture.findById(req.params.id).populate(
+      "teacher",
+      "firstName lastName email"
+    );
+
+    if (!lecture) {
+      return res.status(404).json({ message: "Lecture not found" });
+    }
+
+    // Only allow access if lecture is completed or user is the teacher
+    if (lecture.status !== "completed" && req.user.role !== "teacher") {
+      return res
+        .status(403)
+        .json({
+          message: "Lecture notes are only available after the lecture ends",
+        });
+    }
+
+    // If user is a student, check if they were a participant
+    if (
+      req.user.role === "student" &&
+      !lecture.participants.includes(req.user._id)
+    ) {
+      return res
+        .status(403)
+        .json({
+          message: "Access denied. You were not a participant in this lecture.",
+        });
+    }
+
+    res.json({
+      lecture: {
+        _id: lecture._id,
+        title: lecture.title,
+        teacher: lecture.teacher,
+        status: lecture.status,
+        startTime: lecture.startTime,
+        endTime: lecture.endTime,
+      },
+      notes: lecture.notes,
+    });
+  } catch (error) {
+    console.error("Get lecture notes error:", error);
+    res.status(500).json({ message: "Server error fetching lecture notes" });
+  }
+});
+
 module.exports = router;

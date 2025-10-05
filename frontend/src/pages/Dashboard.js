@@ -206,257 +206,271 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen bg-transparent">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <BookOpen className="h-8 w-8 text-primary-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Lectra</h1>
-              <div className="flex items-center space-x-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    isConnected ? "bg-green-500" : "bg-red-500"
-                  }`}
-                ></div>
-                <span className="text-sm text-gray-600">
-                  {isConnected ? "Connected" : "Disconnected"}
-                </span>
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-4">
+                <BookOpen className="h-8 w-8 text-primary-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Lectra</h1>
+                <div className="flex items-center space-x-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      isConnected ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  ></div>
+                  <span className="text-sm text-gray-600">
+                    {isConnected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center space-x-4">
-              {user.role === "student" && (
+              <div className="flex items-center space-x-4">
+                {user.role === "student" && (
+                  <button
+                    onClick={() => navigate("/select-professor")}
+                    className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Change Professor</span>
+                  </button>
+                )}
+                <div className="flex items-center space-x-2">
+                  <User className="h-5 w-5 text-gray-400" />
+                  <span className="text-sm text-gray-700">
+                    {user.firstName} {user.lastName}
+                  </span>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      user.role === "teacher"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-green-100 text-green-800"
+                    }`}
+                  >
+                    {user.role}
+                  </span>
+                </div>
                 <button
-                  onClick={() => navigate("/select-professor")}
-                  className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  onClick={logout}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Change Professor</span>
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
                 </button>
-              )}
-              <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-gray-400" />
-                <span className="text-sm text-gray-700">
-                  {user.firstName} {user.lastName}
-                </span>
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    user.role === "teacher"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {user.role}
-                </span>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user.firstName}!
-          </h2>
-          <p className="text-gray-600">
-            {user.role === "teacher"
-              ? "Manage your lectures and engage with your students."
-              : "Join active lectures and access your learning materials."}
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-primary-100">
-                <BookOpen className="h-6 w-6 text-primary-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Total Lectures
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {lectures.length}
-                </p>
               </div>
             </div>
           </div>
+        </header>
 
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100">
-                <Play className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
-                  Active Lectures
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {lectures.filter((l) => l.status === "active").length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {lectures.filter((l) => l.status === "completed").length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Your Lectures</h3>
-          {user.role === "teacher" && (
-            <Link
-              to="/create-lecture"
-              className="btn btn-primary flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create New Lecture</span>
-            </Link>
-          )}
-        </div>
-
-        {/* Lectures List */}
-        {lectures.length === 0 ? (
-          <div className="card text-center py-12">
-            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No lectures found
-            </h3>
-            <p className="text-gray-600 mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, {user.firstName}!
+            </h2>
+            <p className="text-gray-600">
               {user.role === "teacher"
-                ? "Create your first lecture to get started."
-                : "No lectures are available at the moment."}
+                ? "Manage your lectures and engage with your students."
+                : "Join active lectures and access your learning materials."}
             </p>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="card">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-primary-100">
+                  <BookOpen className="h-6 w-6 text-primary-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Lectures
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {lectures.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-green-100">
+                  <Play className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Active Lectures
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {lectures.filter((l) => l.status === "active").length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-purple-100">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Completed</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {lectures.filter((l) => l.status === "completed").length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Your Lectures
+            </h3>
             {user.role === "teacher" && (
-              <Link to="/create-lecture" className="btn btn-primary">
-                Create Lecture
+              <Link
+                to="/create-lecture"
+                className="btn btn-primary flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create New Lecture</span>
               </Link>
             )}
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lectures.map((lecture) => (
-              <div
-                key={lecture._id}
-                className="card hover:shadow-lg transition-shadow"
-              >
-                <div className="card-header">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-lg font-semibold text-gray-900 truncate">
-                      {lecture.title}
-                    </h4>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                        lecture.status
-                      )}`}
-                    >
-                      {getStatusIcon(lecture.status)}
-                      <span className="ml-1 capitalize">{lecture.status}</span>
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    by {lecture.teacher.firstName} {lecture.teacher.lastName}
-                  </p>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {new Date(lecture.createdAt).toLocaleDateString()}
-                  </div>
-
-                  {lecture.participants && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      {lecture.participants.length} participants
+          {/* Lectures List */}
+          {lectures.length === 0 ? (
+            <div className="card text-center py-12">
+              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No lectures found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {user.role === "teacher"
+                  ? "Create your first lecture to get started."
+                  : "No lectures are available at the moment."}
+              </p>
+              {user.role === "teacher" && (
+                <Link to="/create-lecture" className="btn btn-primary">
+                  Create Lecture
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {lectures.map((lecture) => (
+                <div
+                  key={lecture._id}
+                  className="card hover:shadow-lg transition-shadow"
+                >
+                  <div className="card-header">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-lg font-semibold text-gray-900 truncate">
+                        {lecture.title}
+                      </h4>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                          lecture.status
+                        )}`}
+                      >
+                        {getStatusIcon(lecture.status)}
+                        <span className="ml-1 capitalize">
+                          {lecture.status}
+                        </span>
+                      </span>
                     </div>
-                  )}
-
-                  <div className="flex items-center text-sm text-gray-600">
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    {lecture.notes.length} notes
+                    <p className="text-sm text-gray-600">
+                      by {lecture.teacher.firstName} {lecture.teacher.lastName}
+                    </p>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-200">
-                    {user.role === "teacher" ? (
-                      <div className="flex space-x-2">
-                        {lecture.status === "scheduled" && (
-                          <button
-                            onClick={() => handleStartLecture(lecture._id)}
-                            className="btn btn-success flex-1 flex items-center justify-center space-x-2"
-                          >
-                            <Play className="h-4 w-4" />
-                            <span>Start</span>
-                          </button>
-                        )}
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {new Date(lecture.createdAt).toLocaleDateString()}
+                    </div>
 
-                        {lecture.status === "active" && (
-                          <button
-                            onClick={() => handleEndLecture(lecture._id)}
-                            className="btn btn-danger flex-1 flex items-center justify-center space-x-2"
-                          >
-                            <Pause className="h-4 w-4" />
-                            <span>End</span>
-                          </button>
-                        )}
-
-                        <Link
-                          to={`/lecture/${lecture._id}`}
-                          className="btn btn-secondary flex-1 text-center"
-                        >
-                          Manage
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="flex space-x-2">
-                        {lecture.status === "active" && (
-                          <button
-                            onClick={() => handleJoinLecture(lecture._id)}
-                            className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
-                          >
-                            <Play className="h-4 w-4" />
-                            <span>Join</span>
-                          </button>
-                        )}
-
-                        <Link
-                          to={`/blackboard/${lecture._id}`}
-                          className="btn btn-secondary flex-1 text-center"
-                        >
-                          View
-                        </Link>
+                    {lecture.participants && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Users className="h-4 w-4 mr-2" />
+                        {lecture.participants.length} participants
                       </div>
                     )}
+
+                    <div className="flex items-center text-sm text-gray-600">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      {lecture.notes.length} notes
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-200">
+                      {user.role === "teacher" ? (
+                        <div className="flex space-x-2">
+                          {lecture.status === "scheduled" && (
+                            <button
+                              onClick={() => handleStartLecture(lecture._id)}
+                              className="btn btn-success flex-1 flex items-center justify-center space-x-2"
+                            >
+                              <Play className="h-4 w-4" />
+                              <span>Start</span>
+                            </button>
+                          )}
+
+                          {lecture.status === "active" && (
+                            <button
+                              onClick={() => handleEndLecture(lecture._id)}
+                              className="btn btn-danger flex-1 flex items-center justify-center space-x-2"
+                            >
+                              <Pause className="h-4 w-4" />
+                              <span>End</span>
+                            </button>
+                          )}
+
+                          <Link
+                            to={`/lecture/${lecture._id}`}
+                            className="btn btn-secondary flex-1 text-center"
+                          >
+                            Manage
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="flex space-x-2">
+                          {lecture.status === "active" && (
+                            <button
+                              onClick={() => handleJoinLecture(lecture._id)}
+                              className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
+                            >
+                              <Play className="h-4 w-4" />
+                              <span>Join</span>
+                            </button>
+                          )}
+
+                          {lecture.status === "completed" && (
+                            <Link
+                              to={`/lecture/${lecture._id}/notes`}
+                              className="btn btn-primary flex-1 flex items-center justify-center space-x-2"
+                            >
+                              <BookOpen className="h-4 w-4" />
+                              <span>View Notes</span>
+                            </Link>
+                          )}
+
+                          <Link
+                            to={`/blackboard/${lecture._id}`}
+                            className="btn btn-secondary flex-1 text-center"
+                          >
+                            View
+                          </Link>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
