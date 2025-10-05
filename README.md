@@ -1,321 +1,196 @@
-# Lectra - AI-Powered Lecture Assistant
+# Lectra AI - Real-time AI-Powered Lecture Assistant
 
-A real-time AI-powered lecture assistant that captures teacher voice, transcribes it, generates clean notes, and provides interactive polling features.
+A comprehensive real-time AI-powered lecture assistant that transforms traditional teaching by providing intelligent note-taking, interactive polling, and seamless student engagement.
 
-## 🚀 Features
+## 🚀 Live Demo
 
-- **Real-time Voice Transcription**: Capture teacher's voice and transcribe using Deepgram STT
-- **AI-Powered Note Generation**: Generate clean bullet-point notes using Gemini API
-- **Live Blackboard**: Real-time HTML + Tailwind frontend for students
-- **Voice Commands**: Support for teacher voice commands (e.g., "AI open a new slide")
-- **Interactive Polling**: Live quiz/poll creation with student participation
-- **PDF Generation**: Automatic lecture summary and quiz generation
-- **Role-based Access**: Separate login flows for students and teachers
+- **Frontend**: [https://lectra-ai.vercel.app](https://lectra-ai.vercel.app)
+- **Backend API**: [https://lectra-ai-backend.onrender.com](https://lectra-ai-backend.onrender.com)
 
-## 🛠️ Tech Stack
+## ✨ Features
 
-- **Frontend**: React.js + Tailwind CSS
-- **Backend**: Node.js + Express + Socket.IO
-- **Database**: MongoDB
-- **AI Services**: Deepgram STT + Gemini API
-- **PDF Generation**: Puppeteer
-- **Authentication**: JWT
+- 🎤 **Real-time Voice Processing** - Speech-to-text with Deepgram
+- 📝 **AI Note Generation** - Intelligent summarization with Google Gemini
+- 🎯 **Interactive Polling** - Live polls and quizzes
+- 👥 **User Management** - Role-based access for teachers and students
+- 📄 **PDF Generation** - Automatic lecture summaries and quiz results
+- 🔒 **Secure Authentication** - JWT-based authentication system
 
-## 📋 Prerequisites
+## 🏗️ Tech Stack
 
-Before setting up the project, make sure you have:
+### Backend
 
-1. **Node.js** (v16 or higher)
-2. **MongoDB** (local installation or MongoDB Atlas account)
-3. **Deepgram Account** (for Speech-to-Text API)
-4. **Google Gemini API Key**
+- Node.js + Express.js
+- Socket.IO for real-time communication
+- MongoDB with Mongoose
+- JWT authentication
+- Deepgram Speech-to-Text
+- Google Gemini AI
 
-## ⚡ Quick Setup
+### Frontend
 
-1. **Clone and setup:**
+- React.js
+- Tailwind CSS
+- Socket.IO Client
+- React Router
 
-```bash
-git clone <your-repo-url>
-cd Lectra
-chmod +x setup.sh
-./setup.sh
-```
+## 🚀 Quick Start
 
-2. **Configure environment variables:**
+### Prerequisites
 
-   - Copy `backend/env.example` to `backend/.env`
-   - Update the following values in `backend/.env`:
-     ```env
-     MONGODB_URI=mongodb://localhost:27017/lectra
-     GEMINI_API_KEY=your-gemini-api-key-here
-     DEEPGRAM_API_KEY=your-deepgram-api-key-here
-     JWT_SECRET=your-super-secret-jwt-key
-     ```
+- Node.js (v16 or higher)
+- MongoDB Atlas account
+- Deepgram API key
+- Google Gemini API key
 
-3. **Start the application:**
+### Installation
 
-```bash
-npm run dev
-```
+1. **Clone the repository**
 
-## 🔧 Detailed Setup
+   ```bash
+   git clone https://github.com/yourusername/lectra-ai.git
+   cd lectra-ai
+   ```
 
-### 1. Deepgram Speech-to-Text Setup
+2. **Install dependencies**
 
-1. Go to [Deepgram Console](https://console.deepgram.com/)
-2. Sign up for a free account
-3. Navigate to the API Keys section
-4. Create a new API key
-5. Copy the API key and add it to your `.env` file as `DEEPGRAM_API_KEY`
+   ```bash
+   npm run install-all
+   ```
 
-### 2. Gemini API Setup
+3. **Set up environment variables**
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Add the key to your `.env` file
+   ```bash
+   cp backend/env.example backend/.env
+   # Edit backend/.env with your API keys
+   ```
 
-### 3. MongoDB Setup
+4. **Start the development server**
 
-**Option A: Local MongoDB**
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# Install MongoDB locally
-brew install mongodb-community  # macOS
-# or
-sudo apt-get install mongodb    # Ubuntu
-
-# Start MongoDB
-mongod
-```
-
-**Option B: MongoDB Atlas (Cloud)**
-
-1. Create account at [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create a cluster
-3. Get connection string and update `MONGODB_URI`
-
-### 4. Install Dependencies
-
-```bash
-# Install all dependencies
-npm run install-all
-
-# Or install separately
-cd backend && npm install
-cd ../frontend && npm install
-```
-
-## 🚀 Running the Application
-
-### Development Mode
-
-```bash
-# Start both frontend and backend
-npm run dev
-
-# Or start separately
-npm run server  # Backend only
-npm run client  # Frontend only
-```
-
-### Production Mode
-
-```bash
-# Build frontend
-npm run build
-
-# Start backend
-cd backend && npm start
-```
-
-## 🌐 Application URLs
-
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:5000
-- **API Documentation**: http://localhost:5000/api
-
-## 👥 Demo Accounts
-
-The application includes demo accounts for testing:
-
-- **Teacher**: teacher@demo.com / password123
-- **Student**: student@demo.com / password123
-
-## 🎯 How to Use
-
-### For Teachers:
-
-1. **Create a Lecture**: Go to "Create New Lecture" and fill in the details
-2. **Start Lecture**: Click "Start Lecture" to begin
-3. **Start Recording**: Click "Start Recording" to begin voice capture
-4. **Voice Commands**: Use these commands while speaking:
-   - "AI open a new slide" - Create new slide
-   - "AI create a poll" - Start a live poll
-   - "AI create a quiz" - Start a quiz question
-   - "AI end lecture" - End the lecture
-5. **Generate Summary**: After ending, generate PDF summary and quiz questions
-
-### For Students:
-
-1. **Join Lecture**: Click "Join" on active lectures
-2. **View Live Notes**: See real-time notes on the blackboard
-3. **Participate in Polls/Quizzes**: Answer questions when they appear
-4. **Access Materials**: Download summaries and quiz PDFs after lecture ends
-
-## 🏗️ Project Structure
-
-```
-Lectra/
-├── frontend/                 # React.js frontend
-│   ├── src/
-│   │   ├── components/      # Reusable components
-│   │   ├── contexts/        # React contexts (Auth, Socket)
-│   │   ├── pages/          # Main pages
-│   │   └── App.js          # Main app component
-│   ├── public/             # Static files
-│   └── package.json
-├── backend/                 # Node.js backend
-│   ├── models/             # MongoDB models
-│   ├── routes/             # API routes
-│   ├── services/           # External service integrations
-│   ├── socket/             # Socket.IO handlers
-│   ├── middleware/         # Express middleware
-│   ├── uploads/            # File uploads
-│   ├── pdfs/               # Generated PDFs
-│   └── server.js           # Main server file
-├── setup.sh               # Setup script
-├── package.json           # Root package.json
-└── README.md
-```
-
-## 🔌 API Endpoints
-
-### Authentication
-
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/profile` - Get user profile
-- `GET /api/auth/verify` - Verify JWT token
-
-### Lectures
-
-- `GET /api/lectures` - Get all lectures
-- `POST /api/lectures` - Create new lecture (teacher only)
-- `GET /api/lectures/:id` - Get specific lecture
-- `POST /api/lectures/:id/start` - Start lecture (teacher only)
-- `POST /api/lectures/:id/end` - End lecture (teacher only)
-- `POST /api/lectures/:id/join` - Join lecture (student only)
-
-### Quizzes/Polls
-
-- `GET /api/quizzes/lecture/:lectureId` - Get quizzes for lecture
-- `POST /api/quizzes` - Create quiz/poll (teacher only)
-- `POST /api/quizzes/:id/start` - Start quiz/poll
-- `POST /api/quizzes/:id/respond` - Submit response (student only)
-- `GET /api/quizzes/:id/results` - Get quiz results (teacher only)
-
-### Files
-
-- `POST /api/files/lecture/:id/summary` - Generate lecture summary PDF
-- `POST /api/files/quiz/:id/pdf` - Generate quiz results PDF
-- `GET /api/files/:filename` - Download file
+5. **Access the application**
+   - Frontend: http://localhost:3001
+   - Backend: http://localhost:5001
 
 ## 🔧 Environment Variables
 
-### Required Variables
+Create a `.env` file in the `backend` directory:
 
 ```env
-# Server
+# Server Configuration
 PORT=5000
 NODE_ENV=development
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/lectra
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/lectra
 
-# Authentication
-JWT_SECRET=your-super-secret-jwt-key
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=7d
 
-# Deepgram
-DEEPGRAM_API_KEY=your-deepgram-api-key
+# Deepgram Speech-to-Text
+DEEPGRAM_API_KEY=your-deepgram-api-key-here
 
-# Gemini AI
-GEMINI_API_KEY=your-gemini-api-key
+# Gemini AI API
+GEMINI_API_KEY=your-gemini-api-key-here
 
 # File Storage
 UPLOAD_PATH=./uploads
 PDF_PATH=./pdfs
 
 # CORS
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001
 ```
+
+## 📱 Usage
+
+### For Teachers
+
+1. Register/Login with teacher role
+2. Create a new lecture
+3. Start recording and speak naturally
+4. Use voice commands for interactive features
+5. Monitor student participation
+6. Generate lecture summaries
+
+### For Students
+
+1. Register/Login with student role
+2. Join available lectures
+3. View real-time notes and slides
+4. Participate in polls and quizzes
+5. Download lecture materials
 
 ## 🚀 Deployment
 
-### Frontend (Netlify)
+### Backend (Render)
 
-1. Connect your GitHub repository to Netlify
-2. Set build command: `npm run build`
-3. Set publish directory: `frontend/build`
+1. Connect your GitHub repository to Render
+2. Create a new Web Service
+3. Set build command: `cd backend && npm install`
+4. Set start command: `cd backend && npm start`
+5. Add environment variables in Render dashboard
+
+### Frontend (Vercel)
+
+1. Connect your GitHub repository to Vercel
+2. Set build command: `cd frontend && npm run build`
+3. Set output directory: `frontend/build`
 4. Add environment variables for API URL
 
-### Backend (Render/Railway)
+## 📊 API Endpoints
 
-1. Connect your GitHub repository
-2. Set build command: `cd backend && npm install`
-3. Set start command: `cd backend && npm start`
-4. Add environment variables
+### Authentication
 
-### Database (MongoDB Atlas)
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
 
-1. Create MongoDB Atlas cluster
-2. Update `MONGODB_URI` with Atlas connection string
-3. Configure IP whitelist for your deployment
+### Lectures
 
-## 🐛 Troubleshooting
+- `GET /api/lectures` - Get all lectures
+- `POST /api/lectures` - Create new lecture
+- `PUT /api/lectures/:id` - Update lecture
+- `DELETE /api/lectures/:id` - Delete lecture
 
-### Common Issues
+### Quizzes
 
-1. **Audio not recording**: Check microphone permissions in browser
-2. **Socket connection failed**: Verify CORS settings and network
-3. **Speech-to-Text not working**: Check Deepgram API key
-4. **PDF generation failed**: Ensure Puppeteer dependencies are installed
+- `GET /api/quizzes` - Get all quizzes
+- `POST /api/quizzes` - Create new quiz
+- `POST /api/quizzes/:id/respond` - Submit quiz response
 
-### Debug Mode
+## 🔒 Security Features
 
-```bash
-# Enable debug logging
-DEBUG=* npm run dev
-```
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based access control
+- CORS protection
+- Rate limiting
+- Input validation
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🙏 Acknowledgments
 
-If you encounter any issues:
+- [Deepgram](https://deepgram.com/) for speech-to-text services
+- [Google Gemini](https://ai.google.dev/) for AI capabilities
+- [MongoDB Atlas](https://www.mongodb.com/atlas) for database hosting
+- [Render](https://render.com/) for backend hosting
+- [Vercel](https://vercel.com/) for frontend hosting
 
-1. Check the troubleshooting section
-2. Review the logs for error messages
-3. Ensure all environment variables are set correctly
-4. Verify all external services (MongoDB, Deepgram, Gemini) are accessible
+## 📞 Support
 
-## 🎉 Features Roadmap
-
-- [ ] Multi-language support
-- [ ] Video recording integration
-- [ ] Advanced analytics dashboard
-- [ ] Mobile app
-- [ ] Integration with LMS platforms
-- [ ] Advanced quiz types (drag-drop, matching, etc.)
-- [ ] Real-time collaboration tools
-- [ ] Cloud storage integration
+If you have any questions or need help, please open an issue or contact us at [your-email@example.com](mailto:your-email@example.com).

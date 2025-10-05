@@ -22,6 +22,7 @@ const authRoutes = require("./routes/auth");
 const lectureRoutes = require("./routes/lectures");
 const quizRoutes = require("./routes/quizzes");
 const fileRoutes = require("./routes/files");
+const healthRoutes = require("./health");
 const { authenticateToken } = require("./middleware/auth");
 
 const app = express();
@@ -61,6 +62,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/lectures", authenticateToken, lectureRoutes);
 app.use("/api/quizzes", authenticateToken, quizRoutes);
 app.use("/api/files", authenticateToken, fileRoutes);
+app.use("/", healthRoutes);
 
 // Socket.IO connection handling
 require("./socket/socketHandler")(io);
