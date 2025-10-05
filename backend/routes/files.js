@@ -115,18 +115,7 @@ router.post("/lecture/:id/summary", requireTeacher, async (req, res) => {
         <div class="section">
           <h2 class="section-title">Lecture Notes</h2>
           <div class="notes-content">
-            ${lecture.notes
-              .map(
-                (note) => `
-              <div style="margin-bottom: 15px;">
-                ${note.content}
-                <div class="timestamp">Slide ${note.slideNumber} - ${new Date(
-                  note.timestamp
-                ).toLocaleTimeString()}</div>
-              </div>
-            `
-              )
-              .join("")}
+            ${lecture.completeNotes || "No notes available for this lecture."}
           </div>
         </div>
 
@@ -169,23 +158,18 @@ router.post("/lecture/:id/summary", requireTeacher, async (req, res) => {
 
     await browser.close();
 
-    // Save PDF to file system
-    const filename = `lecture-${lecture._id}-${Date.now()}.pdf`;
-    const pdfPath = path.join(process.env.PDF_PATH || "./pdfs", filename);
+    // Set response headers for PDF download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="lecture-summary-${lecture.title.replace(
+        /\s+/g,
+        "-"
+      )}.pdf"`
+    );
 
-    // Ensure directory exists
-    await fs.mkdir(path.dirname(pdfPath), { recursive: true });
-    await fs.writeFile(pdfPath, pdfBuffer);
-
-    // Update lecture with PDF path
-    lecture.pdfPath = `/files/${filename}`;
-    await lecture.save();
-
-    res.json({
-      message: "PDF generated successfully",
-      downloadUrl: lecture.pdfPath,
-      filename,
-    });
+    // Send PDF buffer directly
+    res.send(pdfBuffer);
   } catch (error) {
     console.error("PDF generation error:", error);
     res.status(500).json({ message: "Server error generating PDF" });

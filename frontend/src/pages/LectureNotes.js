@@ -20,7 +20,8 @@ const LectureNotes = () => {
   const { user } = useAuth();
 
   const [lecture, setLecture] = useState(null);
-  const [notes, setNotes] = useState([]);
+  const [completeNotes, setCompleteNotes] = useState("");
+  const [notesCount, setNotesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -37,7 +38,8 @@ const LectureNotes = () => {
       setLoading(true);
       const response = await axios.get(`/api/lectures/${id}/notes`);
       setLecture(response.data.lecture);
-      setNotes(response.data.notes);
+      setCompleteNotes(response.data.completeNotes);
+      setNotesCount(response.data.notesCount);
     } catch (err) {
       console.error("Error fetching lecture notes:", err);
       setError(err.response?.data?.message || "Failed to fetch lecture notes");
@@ -50,21 +52,13 @@ const LectureNotes = () => {
   };
 
   const downloadNotes = () => {
-    if (notes.length === 0) {
+    if (!completeNotes) {
       toast.error("No notes available to download");
       return;
     }
 
-    // Create a text file with all notes
-    const notesText = notes
-      .map((note, index) => {
-        return `Note ${index + 1} (Slide ${note.slideNumber} - ${new Date(
-          note.timestamp
-        ).toLocaleString()}):\n${note.content}\n\n`;
-      })
-      .join("");
-
-    const blob = new Blob([notesText], { type: "text/plain" });
+    // Create a text file with the complete notes
+    const blob = new Blob([completeNotes], { type: "text/plain" });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -137,7 +131,7 @@ const LectureNotes = () => {
           </div>
           <button
             onClick={downloadNotes}
-            disabled={notes.length === 0}
+            disabled={!completeNotes}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4 mr-2" />
@@ -189,7 +183,9 @@ const LectureNotes = () => {
               <div>
                 <p className="text-sm text-gray-500">Notes</p>
                 <p className="font-medium">
-                  {notes.length} note{notes.length !== 1 ? "s" : ""}
+                  {completeNotes
+                    ? "Complete notes available"
+                    : "No notes available"}
                 </p>
               </div>
             </div>
@@ -202,7 +198,7 @@ const LectureNotes = () => {
             Lecture Notes
           </h2>
 
-          {notes.length === 0 ? (
+          {!completeNotes ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 text-lg">
@@ -213,29 +209,12 @@ const LectureNotes = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {notes.map((note, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        Note {index + 1}
-                      </span>
-                      <span>Slide {note.slideNumber}</span>
-                      <span>{new Date(note.timestamp).toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  <div className="prose prose-sm max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {note.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              ))}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="prose prose-lg max-w-none prose-headings:mt-6 prose-headings:mb-4 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:my-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {completeNotes}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </div>

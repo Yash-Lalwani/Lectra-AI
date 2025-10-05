@@ -310,11 +310,9 @@ router.get("/:id/notes", async (req, res) => {
 
     // Only allow access if lecture is completed or user is the teacher
     if (lecture.status !== "completed" && req.user.role !== "teacher") {
-      return res
-        .status(403)
-        .json({
-          message: "Lecture notes are only available after the lecture ends",
-        });
+      return res.status(403).json({
+        message: "Lecture notes are only available after the lecture ends",
+      });
     }
 
     // If user is a student, check if they were a participant
@@ -322,11 +320,9 @@ router.get("/:id/notes", async (req, res) => {
       req.user.role === "student" &&
       !lecture.participants.includes(req.user._id)
     ) {
-      return res
-        .status(403)
-        .json({
-          message: "Access denied. You were not a participant in this lecture.",
-        });
+      return res.status(403).json({
+        message: "Access denied. You were not a participant in this lecture.",
+      });
     }
 
     res.json({
@@ -338,7 +334,8 @@ router.get("/:id/notes", async (req, res) => {
         startTime: lecture.startTime,
         endTime: lecture.endTime,
       },
-      notes: lecture.notes,
+      completeNotes: lecture.completeNotes,
+      notesCount: lecture.notes.length,
     });
   } catch (error) {
     console.error("Get lecture notes error:", error);

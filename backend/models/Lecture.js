@@ -39,6 +39,10 @@ const lectureSchema = new mongoose.Schema({
       },
     },
   ],
+  completeNotes: {
+    type: String,
+    default: "",
+  },
   slides: [
     {
       slideNumber: {
@@ -120,6 +124,12 @@ lectureSchema.methods.updateCurrentSlide = function (content) {
   if (this.slides.length > 0) {
     this.slides[this.slides.length - 1].content = content;
   }
+  return this.save();
+};
+
+// Update complete notes
+lectureSchema.methods.updateCompleteNotes = function (content) {
+  this.completeNotes = content;
   return this.save();
 };
 

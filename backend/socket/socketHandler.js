@@ -188,8 +188,11 @@ module.exports = (io) => {
                   note.content.substring(0, 100) + "..."
                 );
 
-                // Save to database
-                await saveNoteToDatabase(socket.currentLectureId, note);
+                // Save complete notes to database
+                await saveCompleteNotesToDatabase(
+                  socket.currentLectureId,
+                  notesResult.notes
+                );
               }
             }
           }
@@ -472,6 +475,17 @@ module.exports = (io) => {
       }
     } catch (error) {
       console.error("Error saving note to database:", error);
+    }
+  }
+
+  async function saveCompleteNotesToDatabase(lectureId, completeNotes) {
+    try {
+      const lecture = await Lecture.findById(lectureId);
+      if (lecture) {
+        await lecture.updateCompleteNotes(completeNotes);
+      }
+    } catch (error) {
+      console.error("Error saving complete notes to database:", error);
     }
   }
 };
