@@ -30,6 +30,7 @@ const Blackboard = () => {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [notes, setNotes] = useState([]);
   const [markdownContent, setMarkdownContent] = useState("");
+  const [interimText, setInterimText] = useState(""); // For live interim transcripts
   const [activePoll, setActivePoll] = useState(null);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -55,12 +56,18 @@ const Blackboard = () => {
         setIsConnected(true);
       });
 
+      socket.on("interim-transcript", (data) => {
+        console.log("Student received interim:", data.text.substring(0, 50));
+        setInterimText(data.text);
+      });
+
       socket.on("markdown-updated", (note) => {
         console.log(
           "Student received markdown update:",
           note.content?.substring(0, 50) + "..."
         );
         setMarkdownContent(note.content);
+        setInterimText(""); // Clear interim when formatted notes arrive
       });
 
       socket.on("new-note", (note) => {
@@ -115,6 +122,8 @@ const Blackboard = () => {
 
       return () => {
         socket.off("lecture-state");
+        socket.off("interim-transcript");
+        socket.off("markdown-updated");
         socket.off("new-note");
         socket.off("slide-changed");
         socket.off("poll-started");
@@ -344,11 +353,21 @@ const Blackboard = () => {
               </div>
 
               <div className="max-h-96 overflow-y-auto">
-                {markdownContent ? (
-                  <div className="text-white prose prose-invert prose-lg max-w-none prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {markdownContent}
-                    </ReactMarkdown>
+                {markdownContent || interimText ? (
+                  <div>
+                    <div className="text-white prose prose-invert prose-lg max-w-none prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {markdownContent}
+                      </ReactMarkdown>
+                    </div>
+                    {interimText && (
+                      <div className="mt-4 p-4 bg-blue-900/30 border-l-4 border-blue-400 rounded-r animate-pulse">
+                        <p className="text-blue-100 italic">{interimText}</p>
+                        <p className="text-xs text-blue-300 mt-1">
+                          Live transcription...
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12">

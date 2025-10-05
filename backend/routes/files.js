@@ -24,8 +24,17 @@ router.post("/lecture/:id/summary", requireTeacher, async (req, res) => {
     // Generate summary using Gemini if not already generated
     let summary = lecture.summary;
     if (!summary) {
+      // Use transcript if available, otherwise use completeNotes
+      const contentForSummary = lecture.transcript || lecture.completeNotes;
+
+      if (!contentForSummary) {
+        return res.status(400).json({
+          message: "No content available to generate summary. Please ensure the lecture has notes or transcript."
+        });
+      }
+
       const summaryResult = await geminiService.generateSummary(
-        lecture.transcript
+        contentForSummary
       );
       if (summaryResult.success) {
         summary = summaryResult.summary;
@@ -115,7 +124,19 @@ router.post("/lecture/:id/summary", requireTeacher, async (req, res) => {
         <div class="section">
           <h2 class="section-title">Lecture Notes</h2>
           <div class="notes-content">
-            ${lecture.completeNotes || "No notes available for this lecture."}
+            ${
+              lecture.completeNotes
+                ? lecture.completeNotes
+                    .replace(/### (.*)/g, '<h4>$1</h4>')
+                    .replace(/## (.*)/g, '<h3>$1</h3>')
+                    .replace(/# (.*)/g, '<h2>$1</h2>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/- (.*)/g, '<li>$1</li>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>')
+                : "No notes available for this lecture."
+            }
           </div>
         </div>
 
@@ -126,12 +147,18 @@ router.post("/lecture/:id/summary", requireTeacher, async (req, res) => {
           </div>
         </div>
 
+        ${
+          lecture.transcript
+            ? `
         <div class="section">
           <h2 class="section-title">Full Transcript</h2>
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px;">
             ${lecture.transcript.replace(/\n/g, "<br>")}
           </div>
         </div>
+        `
+            : ""
+        }
       </body>
       </html>
     `;

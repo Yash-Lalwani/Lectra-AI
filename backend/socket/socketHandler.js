@@ -8,6 +8,9 @@ const geminiService = require("../services/geminiService");
 const activeLectures = new Map(); // lectureId -> { teacherSocket, studentSockets: Set }
 const userSockets = new Map(); // userId -> socket
 
+// Transcript accumulation for batching
+const transcriptBuffer = new Map(); // lectureId -> { buffer: string, timer: timeout, lastUpdate: timestamp }
+
 module.exports = (io) => {
   io.use(async (socket, next) => {
     try {
@@ -123,78 +126,66 @@ module.exports = (io) => {
 
         // Create streaming connection with callback for transcript processing
         const onTranscript = async (transcription) => {
-          console.log("Processing transcript:", transcription.text);
-          if (transcription.success && transcription.text.trim()) {
-            const lectureRoom = activeLectures.get(socket.currentLectureId);
-            if (!lectureRoom) {
-              console.log("No lecture room found");
-              return;
-            }
+          if (!transcription.success || !transcription.text.trim()) {
+            return;
+          }
 
-            // Check for voice commands
-            const commandDetection = await geminiService.detectCommand(
-              transcription.text
-            );
+          const lectureRoom = activeLectures.get(socket.currentLectureId);
+          if (!lectureRoom) {
+            console.log("❌ No lecture room found for:", socket.currentLectureId);
+            return;
+          }
 
-            if (commandDetection.success && commandDetection.hasCommand) {
-              console.log("Voice command detected:", commandDetection.command);
-              await handleVoiceCommand(socket, commandDetection, lectureRoom);
-            } else {
-              // Generate notes from normal speech
-              console.log("Generating notes for:", transcription.text);
+          // INTERIM TRANSCRIPT - Show immediately for instant feedback
+          if (!transcription.isFinal) {
+            console.log("⚡ Interim:", transcription.text.substring(0, 50));
 
-              // Get existing markdown content
-              const existingMarkdown = lectureRoom.markdownContent || "";
+            // Send interim transcript for immediate display (raw text)
+            io.to(socket.currentLectureId).emit("interim-transcript", {
+              text: transcription.text,
+              timestamp: Date.now(),
+            });
+            return;
+          }
 
-              const notesResult = await geminiService.generateNotes(
-                transcription.text,
-                existingMarkdown
-              );
+          // FINAL TRANSCRIPT - Process and format
+          console.log("✅ Final transcript:", transcription.text);
 
-              console.log("Notes result:", notesResult);
+          // Save raw transcript to database
+          await saveTranscriptToDatabase(
+            socket.currentLectureId,
+            transcription.text
+          );
 
-              if (notesResult.success) {
-                // Update the single markdown document
-                lectureRoom.markdownContent = notesResult.notes;
+          // Get or create buffer for this lecture
+          let buffer = transcriptBuffer.get(socket.currentLectureId);
+          if (!buffer) {
+            buffer = { buffer: "", timer: null, lastUpdate: Date.now() };
+            transcriptBuffer.set(socket.currentLectureId, buffer);
+          }
 
-                // Create a single note object with the complete markdown
-                const note = {
-                  content: notesResult.notes,
-                  timestamp: Date.now(),
-                  slideNumber: lectureRoom.currentSlide,
-                  isMarkdown: true,
-                };
+          // Add to buffer
+          buffer.buffer += (buffer.buffer ? " " : "") + transcription.text;
+          buffer.lastUpdate = Date.now();
 
-                // Replace the notes array with a single markdown note
-                lectureRoom.notes = [note];
+          // Clear existing timer
+          if (buffer.timer) {
+            clearTimeout(buffer.timer);
+          }
 
-                // Broadcast updated markdown to all students
-                console.log(
-                  "Broadcasting markdown to room:",
-                  socket.currentLectureId
-                );
-                console.log("Room participants:", {
-                  teacher: !!lectureRoom.teacherSocket,
-                  students: lectureRoom.studentSockets.size,
-                });
+          // Process immediately if buffer is getting large (>30 words) or set timer for 1.5 seconds
+          const wordCount = buffer.buffer.split(/\s+/).length;
+          const shouldProcessNow = wordCount >= 30;
 
-                socket
-                  .to(socket.currentLectureId)
-                  .emit("markdown-updated", note);
-                socket.emit("markdown-updated", note);
-
-                console.log(
-                  "Markdown updated:",
-                  note.content.substring(0, 100) + "..."
-                );
-
-                // Save complete notes to database
-                await saveCompleteNotesToDatabase(
-                  socket.currentLectureId,
-                  notesResult.notes
-                );
-              }
-            }
+          if (shouldProcessNow) {
+            console.log("📦 Buffer full, processing immediately:", wordCount, "words");
+            await processBufferedTranscript(socket.currentLectureId, lectureRoom, io);
+          } else {
+            // Wait 1.5 seconds for more transcripts before processing
+            buffer.timer = setTimeout(async () => {
+              console.log("⏰ Timer expired, processing buffer:", wordCount, "words");
+              await processBufferedTranscript(socket.currentLectureId, lectureRoom, io);
+            }, 1500);
           }
         };
 
@@ -486,6 +477,87 @@ module.exports = (io) => {
       }
     } catch (error) {
       console.error("Error saving complete notes to database:", error);
+    }
+  }
+
+  async function saveTranscriptToDatabase(lectureId, transcriptText) {
+    try {
+      const lecture = await Lecture.findById(lectureId);
+      if (lecture) {
+        // Append to existing transcript
+        lecture.transcript = lecture.transcript
+          ? lecture.transcript + " " + transcriptText
+          : transcriptText;
+        await lecture.save();
+      }
+    } catch (error) {
+      console.error("Error saving transcript to database:", error);
+    }
+  }
+
+  async function processBufferedTranscript(lectureId, lectureRoom, io) {
+    const buffer = transcriptBuffer.get(lectureId);
+    if (!buffer || !buffer.buffer) {
+      return;
+    }
+
+    const transcriptText = buffer.buffer;
+
+    // Clear the buffer
+    buffer.buffer = "";
+    if (buffer.timer) {
+      clearTimeout(buffer.timer);
+      buffer.timer = null;
+    }
+
+    console.log("📝 Processing buffered transcript:", transcriptText.substring(0, 100) + "...");
+
+    // Check for voice commands
+    const commandDetection = await geminiService.detectCommand(transcriptText);
+
+    if (commandDetection.success && commandDetection.hasCommand) {
+      console.log("🎤 Voice command detected:", commandDetection.commandType);
+      // For commands, we need the socket - get it from the lecture room
+      const teacherSocket = lectureRoom.teacherSocket;
+      if (teacherSocket) {
+        await handleVoiceCommand(teacherSocket, commandDetection, lectureRoom);
+      }
+    } else {
+      // Generate notes from normal speech
+      const existingMarkdown = lectureRoom.markdownContent || "";
+
+      const notesResult = await geminiService.generateNotes(
+        transcriptText,
+        existingMarkdown
+      );
+
+      console.log("Notes generation result:", notesResult.success);
+
+      if (notesResult.success) {
+        // Update the markdown document
+        lectureRoom.markdownContent = notesResult.notes;
+
+        const note = {
+          content: notesResult.notes,
+          timestamp: Date.now(),
+          slideNumber: lectureRoom.currentSlide,
+          isMarkdown: true,
+        };
+
+        lectureRoom.notes = [note];
+
+        console.log("📡 Broadcasting formatted notes to room:", lectureId);
+
+        // Broadcast updated markdown to all participants
+        io.to(lectureId).emit("markdown-updated", note);
+
+        console.log("✅ Markdown broadcast complete");
+
+        // Save complete notes to database
+        await saveCompleteNotesToDatabase(lectureId, notesResult.notes);
+      } else {
+        console.log("❌ Notes generation failed:", notesResult.error);
+      }
     }
   }
 };

@@ -33,7 +33,8 @@ class SpeechService {
         encoding: "linear16",
         channels: 1,
         sample_rate: 16000,
-        endpointing: 1000,
+        endpointing: 500, // Reduced from 1000ms to 500ms for faster finalization
+        interim_results: true, // Explicitly enable interim results
       });
 
       // Handle transcript events
@@ -43,7 +44,12 @@ class SpeechService {
           const confidence = data.channel.alternatives[0].confidence;
           const isFinal = data.is_final;
 
-          console.log("Transcript received:", transcript);
+          console.log("🎙️ Deepgram Transcript:", {
+            text: transcript,
+            isFinal: isFinal,
+            confidence: confidence,
+            socketId: socket.id
+          });
 
           onTranscript({
             text: transcript,
@@ -51,6 +57,8 @@ class SpeechService {
             isFinal: isFinal,
             success: true,
           });
+        } else {
+          console.log("⚠️ Deepgram data but no transcript:", data);
         }
       });
 
@@ -97,22 +105,19 @@ class SpeechService {
   // Send audio data to streaming connection
   sendAudio(socket, audioBuffer) {
     const connection = this.connections.get(socket.id);
-    console.log(
-      "Sending audio to Deepgram - Connection exists:",
-      !!connection,
-      "Ready state:",
-      connection?.getReadyState()
-    );
 
     if (connection && connection.getReadyState() === 1) {
       try {
         connection.send(audioBuffer);
-        console.log("Audio sent to Deepgram successfully");
+        // Less verbose logging - only log occasionally
+        if (Math.random() < 0.01) { // Log ~1% of audio chunks
+          console.log("🔊 Audio streaming to Deepgram, buffer size:", audioBuffer.byteLength);
+        }
       } catch (error) {
-        console.error("Error sending audio to Deepgram:", error);
+        console.error("❌ Error sending audio to Deepgram:", error);
       }
     } else {
-      console.log("Cannot send audio - no connection or connection not ready");
+      console.log("❌ Cannot send audio - Connection state:", connection?.getReadyState());
     }
   }
 

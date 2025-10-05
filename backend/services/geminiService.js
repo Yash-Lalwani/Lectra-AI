@@ -8,39 +8,21 @@ class GeminiService {
 
   async generateNotes(transcript, existingMarkdown = "") {
     try {
-      const prompt = `
-        Convert the following lecture transcript into well-structured, visually appealing markdown notes.
+      const prompt = `Convert this lecture transcript into concise markdown notes. ${
+        existingMarkdown
+          ? "Append to existing notes seamlessly."
+          : "Create structured notes."
+      }
 
-        Guidelines:
-        - Focus on key concepts, important details, and actionable insights.
-        - Organize content with clear hierarchy using markdown syntax:
-          - # for main topics
-          - ## for subtopics
-          - ### for smaller sections if needed
-        - Use bullet points (-) for lists and keep them concise.
-        - Apply **bold** for emphasis, *italic* for secondary notes.
-        - Insert emojis to enhance readability and engagement (📝 📚 💡 🔍 ⚡ 📊 🎯).
-        - Use triple backticks (\`\`\`) for code or technical examples.
-        - Ensure proper spacing, tabbing and blank lines between sections for readability.
-        - Keep the output concise but comprehensive — avoid unnecessary filler.
-        
-        If the transcript is empty, return the existing markdown content.
-        If existing markdown is provided:
-        - Append new content seamlessly without repeating information.
-        - Maintain the same style, tone, and formatting consistency.
+Rules:
+- Use # ## ### for hierarchy
+- **bold** for key terms
+- Bullet points (-) for lists
+- Add relevant emojis (📝 💡 🔍)
+- NO explanations, ONLY markdown
 
-        Transcript:
-        ${transcript}
-
-        ${
-          existingMarkdown
-            ? `Existing markdown content:\n${existingMarkdown}\n\nPlease append new content while preserving consistency.`
-            : ""
-        }
-
-        Return ONLY the final markdown content (existing + new). 
-        Do not add explanations, instructions, or extra commentary outside of the markdown.
-      `;
+${existingMarkdown ? `Existing:\n${existingMarkdown}\n\nNew transcript:` : "Transcript:"}
+${transcript}`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
@@ -150,17 +132,19 @@ class GeminiService {
     try {
       const prompt = `
         Based on the following lecture notes in markdown format, generate ${numQuestions} multiple-choice quiz questions.
-        
+
         Requirements:
         - Questions should test understanding of key concepts from the notes
         - Each question should have 4 options (A, B, C, D)
         - Only one correct answer per question
         - Questions should be clear and unambiguous
         - Focus on the most important topics covered
-        
+
         Lecture Notes: ${content}
-        
-        Respond with JSON in this format:
+
+        IMPORTANT: Respond ONLY with valid JSON. Do not include any markdown code blocks, backticks, or explanatory text.
+
+        Format:
         {
           "questions": [
             {
@@ -171,22 +155,32 @@ class GeminiService {
             }
           ]
         }
+
+        The correctAnswer field should be the index (0-3) of the correct option.
       `;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
+      let responseText = response.text().trim();
+
+      // Clean up response - remove markdown code blocks if present
+      responseText = responseText
+        .replace(/```json\s*/g, "")
+        .replace(/```\s*/g, "")
+        .trim();
 
       try {
-        const quizData = JSON.parse(response.text());
+        const quizData = JSON.parse(responseText);
         return {
           quiz: quizData,
           success: true,
         };
       } catch (parseError) {
+        console.error("Failed to parse quiz JSON:", responseText);
         return {
           quiz: null,
           success: false,
-          error: "Failed to parse quiz response",
+          error: "Failed to parse quiz response: " + parseError.message,
         };
       }
     } catch (error) {

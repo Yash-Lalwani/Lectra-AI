@@ -12,6 +12,7 @@ import {
   Play,
   Pause,
   StopCircle,
+  Plus,
   Trash2,
   Users,
   MessageSquareText,
@@ -30,7 +31,6 @@ function Lecture() {
   const [isRecording, setIsRecording] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(1);
   const [markdownContent, setMarkdownContent] = useState("");
-  const [interimText, setInterimText] = useState(""); // For live interim transcripts
   const [activePoll, setActivePoll] = useState(null);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -50,6 +50,17 @@ function Lecture() {
     fetchLecture();
   }, [id, user.role, navigate]);
 
+  // Auto-start recording when lecture becomes active
+  useEffect(() => {
+    if (lecture && lecture.status === "active" && !isRecording && isConnected) {
+      // Small delay to ensure everything is ready
+      const timer = setTimeout(() => {
+        startRecording();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [lecture?.status, isConnected]);
+
   useEffect(() => {
     if (socket && lecture) {
       // Join lecture room
@@ -61,15 +72,8 @@ function Lecture() {
         setMarkdownContent(data.markdownContent || "");
       });
 
-      socket.on("interim-transcript", (data) => {
-        // Show interim text immediately (fades after formatted notes arrive)
-        setInterimText(data.text);
-      });
-
       socket.on("markdown-updated", (note) => {
         setMarkdownContent(note.content);
-        // Clear interim text when formatted notes arrive
-        setInterimText("");
       });
 
       socket.on("slide-changed", (data) => {
@@ -121,7 +125,6 @@ function Lecture() {
 
       return () => {
         socket.off("lecture-state");
-        socket.off("interim-transcript");
         socket.off("markdown-updated");
         socket.off("slide-changed");
         socket.off("poll-started");
@@ -245,7 +248,7 @@ function Lecture() {
     try {
       await axios.post(`/api/lectures/${id}/start`);
       setLecture((prev) => ({ ...prev, status: "active" }));
-      toast.success("Lecture started!");
+      toast.success("Lecture started! Recording will begin automatically...");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to start lecture");
     }
@@ -334,6 +337,19 @@ function Lecture() {
     }
   };
 
+  const handleNewSlide = async () => {
+    try {
+      const newSlideNumber = currentSlide + 1;
+      await axios.post(`/api/lectures/${id}/slide`, {
+        slideNumber: newSlideNumber,
+      });
+      setCurrentSlide(newSlideNumber);
+      toast.success(`Moved to slide ${newSlideNumber}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create new slide");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -383,15 +399,22 @@ function Lecture() {
               Participants: {participants.length}
             </span>
             <button
-              onClick={stopRecording}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center font-medium"
+              onClick={handleNewSlide}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center font-medium"
             >
-              <MicOff className="mr-2" size={20} />
-              Stop Recording
+              <Plus className="mr-2" size={18} />
+              New Slide
+            </button>
+            <button
+              onClick={stopRecording}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center font-medium"
+            >
+              <Pause className="mr-2" size={18} />
+              Pause Recording
             </button>
             <button
               onClick={endLecture}
-              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center font-medium"
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center font-medium"
             >
               <StopCircle className="mr-2" size={20} />
               End Lecture
@@ -403,21 +426,11 @@ function Lecture() {
         <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg h-full">
             <div className="p-8 h-full overflow-y-auto">
-              {markdownContent || interimText ? (
-                <div>
-                  <div className="prose prose-lg max-w-none prose-headings:mt-8 prose-headings:mb-4 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:my-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {markdownContent}
-                    </ReactMarkdown>
-                  </div>
-                  {interimText && (
-                    <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r animate-pulse">
-                      <p className="text-gray-700 italic">{interimText}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Processing...
-                      </p>
-                    </div>
-                  )}
+              {markdownContent ? (
+                <div className="prose prose-lg max-w-none prose-headings:mt-8 prose-headings:mb-4 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:my-2">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {markdownContent}
+                  </ReactMarkdown>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -661,107 +674,116 @@ function Lecture() {
     );
   }
 
-  // Normal mode - standard lecture interface
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">
-          {lecture.title} - Slide {currentSlide}
-        </h1>
-        <div className="flex items-center space-x-4">
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              lecture.status === "active"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {lecture.status}
-          </span>
-          <div
-            className={`w-3 h-3 rounded-full ${
-              isConnected ? "bg-green-500" : "bg-red-500"
-            }`}
-            title={
-              isConnected ? "Connected to server" : "Disconnected from server"
-            }
-          ></div>
-          <span className="text-gray-600">
-            Participants: {participants.length}
-          </span>
+  // Pre-lecture mode - show start button
+  if (lecture.status === "scheduled") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
+            {lecture.title}
+          </h1>
+          <div className="mb-6 text-center">
+            <span className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+              Scheduled
+            </span>
+          </div>
+          <p className="text-gray-600 mb-6 text-center">
+            Ready to start your lecture? Click the button below to begin.
+            Recording will start automatically.
+          </p>
           <button
-            onClick={lecture.status === "active" ? endLecture : startLecture}
-            className={`px-4 py-2 text-white rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${
-              lecture.status === "active"
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-            disabled={lecture.status === "completed"}
+            onClick={startLecture}
+            className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center font-medium text-lg"
+            disabled={!isConnected}
           >
-            {lecture.status === "active" ? (
-              <>
-                <StopCircle className="inline-block mr-2" size={18} />
-                End Lecture
-              </>
-            ) : (
-              <>
-                <Play className="inline-block mr-2" size={18} />
-                Start Lecture
-              </>
-            )}
+            <Play className="mr-3" size={24} />
+            Start Lecture
           </button>
+          {!isConnected && (
+            <p className="text-red-500 text-sm mt-4 text-center">
+              Connecting to server...
+            </p>
+          )}
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main className="flex-1 flex p-4 space-x-4">
-        {/* Left Panel: Controls and Notes Preview */}
-        <div className="w-1/3 bg-white rounded-lg shadow-md p-6 flex flex-col">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Teacher Controls
-          </h2>
-          <div className="flex space-x-4 mb-6">
+  // Active lecture but not recording - show resume button
+  if (lecture.status === "active" && !isRecording) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Top Controls Bar */}
+        <div className="bg-white shadow-sm p-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold text-gray-800">{lecture.title}</h1>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+              Paused
+            </span>
+            <span className="text-gray-600">Slide {currentSlide}</span>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div
+              className={`w-3 h-3 rounded-full ${
+                isConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+            ></div>
+            <span className="text-gray-600">
+              Participants: {participants.length}
+            </span>
+            <button
+              onClick={handleNewSlide}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center font-medium"
+            >
+              <Plus className="mr-2" size={18} />
+              New Slide
+            </button>
             <button
               onClick={startRecording}
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!isConnected || lecture.status !== "active"}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center font-medium"
+              disabled={!isConnected}
             >
-              <Mic className="inline-block mr-2" size={18} />
-              Start Recording
+              <Mic className="mr-2" size={20} />
+              Resume Recording
+            </button>
+            <button
+              onClick={endLecture}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center font-medium"
+            >
+              <StopCircle className="mr-2" size={20} />
+              End Lecture
             </button>
           </div>
-
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Live Notes Preview
-          </h2>
-          <div className="flex-1 bg-gray-50 p-4 rounded-md overflow-y-auto border border-gray-200">
-            {markdownContent ? (
-              <div className="prose prose-sm max-w-none prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {markdownContent}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <p className="text-gray-500">
-                No notes yet. Start recording to generate notes!
-              </p>
-            )}
-          </div>
         </div>
 
-        {/* Right Panel: Slides */}
-        <div className="w-2/3 bg-white rounded-lg shadow-md p-6 flex flex-col">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Presentation Slides
-          </h2>
-          <div className="flex-1 bg-gray-50 p-4 rounded-md overflow-y-auto border border-gray-200">
-            <p className="text-gray-500">
-              Slide content will appear here. Current slide: {currentSlide}
-            </p>
+        {/* Notes Preview */}
+        <div className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg h-full">
+            <div className="p-8 h-full overflow-y-auto">
+              {markdownContent ? (
+                <div className="prose prose-lg max-w-none prose-headings:mt-8 prose-headings:mb-4 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:my-2">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {markdownContent}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <Mic className="w-16 h-16 mb-4 text-gray-300" />
+                  <h3 className="text-xl font-medium mb-2">Recording Paused</h3>
+                  <p className="text-center">
+                    Click "Resume Recording" to continue taking notes.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default Lecture;
