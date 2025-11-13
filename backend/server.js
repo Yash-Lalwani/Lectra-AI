@@ -22,6 +22,7 @@ const authRoutes = require("./routes/auth");
 const lectureRoutes = require("./routes/lectures");
 const quizRoutes = require("./routes/quizzes");
 const fileRoutes = require("./routes/files");
+const healthRoutes = require("./health");
 const { authenticateToken } = require("./middleware/auth");
 
 const app = express();
@@ -56,11 +57,27 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files
 app.use("/files", express.static(process.env.PDF_PATH || "./pdfs"));
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({
+    message: "Lectra AI Backend API",
+    status: "running",
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth",
+      lectures: "/api/lectures",
+      quizzes: "/api/quizzes",
+      files: "/api/files"
+    }
+  });
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/lectures", authenticateToken, lectureRoutes);
 app.use("/api/quizzes", authenticateToken, quizRoutes);
 app.use("/api/files", authenticateToken, fileRoutes);
+app.use("/", healthRoutes);
 
 // Socket.IO connection handling
 require("./socket/socketHandler")(io);
@@ -80,9 +97,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Something went wrong!" });
 });
 
-// 404 handler
+// 404 handler (must be last)
 app.use("*", (req, res) => {
-  res.status(404).json({ message: "Route not found" });
+  res.status(404).json({ 
+    message: "Route not found",
+    path: req.originalUrl,
+    method: req.method
+  });
 });
 
 const PORT = process.env.PORT || 5000;
