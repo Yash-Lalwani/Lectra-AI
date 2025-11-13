@@ -57,6 +57,21 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files
 app.use("/files", express.static(process.env.PDF_PATH || "./pdfs"));
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({
+    message: "Lectra AI Backend API",
+    status: "running",
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth",
+      lectures: "/api/lectures",
+      quizzes: "/api/quizzes",
+      files: "/api/files"
+    }
+  });
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/lectures", authenticateToken, lectureRoutes);
@@ -82,9 +97,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Something went wrong!" });
 });
 
-// 404 handler
+// 404 handler (must be last)
 app.use("*", (req, res) => {
-  res.status(404).json({ message: "Route not found" });
+  res.status(404).json({ 
+    message: "Route not found",
+    path: req.originalUrl,
+    method: req.method
+  });
 });
 
 const PORT = process.env.PORT || 5000;
